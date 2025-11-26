@@ -1,0 +1,50 @@
+## analysis_options.yaml - Clean Architecture + Riverpod + Flutter Best Practices
+# 静的解析 & Lint ルールの定義。保守性 / 可読性 / 安定性向上が目的。
+
+# 推奨ルールセットをベースに拡張。
+include: package:flutter_lints/flutter.yaml  # Flutter 公式推奨セット読み込み
+
+analyzer:
+  exclude:                      # 解析対象外 (ノイズ削減)
+    - build/**                  # ビルド生成物
+    - "**/*.g.dart"             # codegen ファイル (json_serializable 等)
+    - "**/*.freezed.dart"       # freezed 生成ファイル
+
+  errors:                       # エラー/警告レベル設定
+    missing_required_param: error   # 必須パラメータ欠落は致命的
+    missing_return: error            # 戻り値未記述を強制検出
+    dead_code: warning               # 未使用コード (即ブロックはしない)
+    unnecessary_cast: warning        # 冗長キャスト (改善余地)
+
+linter:
+  rules:
+    # --- Flutter Best Practices ---
+    prefer_const_constructors: true          # const コンストラクタで再ビルド最適化
+    prefer_const_literals_to_create_immutables: true # 不変コレクションで安全性
+    prefer_final_fields: true                # フィールドを不変化し意図明確化
+    prefer_final_locals: true                # ローカル変数再代入抑止
+    avoid_print: true                        # 本番混入の print 回避 (logger へ)
+    avoid_returning_null_for_void: true      # void で不要な null 返却禁止
+    avoid_empty_else: true                   # 空 else による誤解回避
+    avoid_init_to_null: true                 # 冗長な null 初期化削減
+
+    # --- Style & Readability ---
+    camel_case_types: true                   # 型名は UpperCamelCase
+    file_names: true                         # ファイル命名規約順守 (snake_case.dart)
+    library_names: true                      # ライブラリ名一貫性
+    avoid_unnecessary_containers: true       # 無意味な Container ネスト排除
+    avoid_renaming_method_parameters: false  # 引数名置換は柔軟に許可
+    unnecessary_this: false                  # this 明示許容 (曖昧性防止)
+
+    # --- Clean Architecture Rules ---
+    avoid_dynamic_calls: true                # dynamic 乱用防止 (型安全性維持)
+    avoid_types_on_closure_parameters: false # 簡潔性優先 (必要時のみ型付け)
+    always_declare_return_types: true        # 境界の契約を明示
+    prefer_expression_function_bodies: false # 1行化強制せず可読性重視
+    require_trailing_commas: true            # 差分最適化 & フォーマット改善
+
+    # --- Safety & Error Handling ---
+    cancel_subscriptions: true               # StreamSubscription リーク防止
+    close_sinks: true                        # Sink/Controller クローズ徹底
+    unawaited_futures: true                  # 非同期取りこぼし検出
+    # no_logic_in_ui: false                  # (概念) UI にビジネスロジックを置かない方針

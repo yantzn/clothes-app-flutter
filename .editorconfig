@@ -1,0 +1,17 @@
+# .editorconfig for Flutter project
+# このファイルはエディタ間で統一されたフォーマット規約を共有するための設定です。
+
+root = true
+# 最上位の .editorconfig として扱い、親ディレクトリの設定を無視します。
+
+[*]
+charset = utf-8                 # 文字コードを UTF-8 に統一
+indent_style = space            # インデントはタブではなくスペース
+indent_size = 2                 # インデント幅 2 (Flutter/Dart 推奨の短め設定)
+end_of_line = lf                # 改行コードを LF に統一しクロスプラットフォーム差分を低減
+insert_final_newline = true     # ファイル末尾に必ず改行を挿入し diff のノイズ防止
+trim_trailing_whitespace = true # 行末の余分な空白を削除し見えない差分を防止
+
+[*.dart]
+indent_size = 2                 # 念押し (他言語追加時に Dart の幅維持)
+max_line_length = 100           # 1行 100 文字以内で可読性とレビュー性を確保
