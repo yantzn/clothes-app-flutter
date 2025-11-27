@@ -9,10 +9,13 @@ import '../../features/weather/presentation/weather_providers.dart';
 import '../../features/clothes/presentation/clothes_providers.dart';
 import '../../features/clothes/presentation/scene_clothes_provider.dart';
 
-// UI共通コンポーネント
+// 共通コンポーネント
 import 'components/custom_bottom_nav.dart';
 import 'components/section_header.dart';
 import 'components/weather_icon.dart';
+import 'components/bottom_sheets/clothes_detail_sheet.dart';
+import 'components/product_card.dart';
+import 'components/bottom_sheets/animated_clothes_bottom_sheet.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -29,36 +32,25 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final weatherAsync = ref.watch(todayWeatherProvider);
     final clothesAsync = ref.watch(todayClothesProvider);
-    final sceneMap = ref.watch(
-      sceneClothesProvider,
-    ); // Map<String, List<String>>
-
-    final sceneNames = sceneMap.keys.toList();
-    if (_selectedSceneIndex >= sceneNames.length) {
-      _selectedSceneIndex = 0;
-    }
+    final sceneList = ref.watch(sceneClothesProvider);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+
+      // Google Weather 風の透明ナビゲーション（不要なら削除可）
       appBar: AppBar(
-        title: const Text('子ども服装ナビ'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
       ),
 
-      // -----------------------------------------------------
-      // Bottom Navigation（ホーム / おすすめ / 設定）
-      // -----------------------------------------------------
       bottomNavigationBar: SafeArea(
         top: false,
         child: CustomBottomNav(
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() => _currentIndex = index);
-
             switch (index) {
-              case 0:
-                // ホーム（何もしない）
-                break;
               case 1:
                 Navigator.pushNamed(context, AppRouter.clothesDetail);
                 break;
@@ -70,11 +62,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
       ),
 
-      // -----------------------------------------------------
-      // Body
-      // -----------------------------------------------------
       body: SafeArea(
-        bottom: false,
+        top: false,
         child: RefreshIndicator(
           onRefresh: () async {
             await ref.read(todayWeatherProvider.notifier).reload();
@@ -82,32 +71,35 @@ class _HomePageState extends ConsumerState<HomePage> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 120),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ① ヒーローエリア（天気＋一言）
+                ////////////////////////////////////////////////////////////
+                // ① TOP：Google Weather 風 Hero（背景付き大エリア）
+                ////////////////////////////////////////////////////////////
                 _HeroSection(
                   weatherAsync: weatherAsync,
                   clothesAsync: clothesAsync,
                 ),
 
-                // ② 今日の服装ナビ（メインカード）
+                ////////////////////////////////////////////////////////////
+                // ② 今日の服装ナビ
+                ////////////////////////////////////////////////////////////
                 _MainClothesSection(clothesAsync: clothesAsync),
 
-                // ③ シーン別タブ＋カード
+                ////////////////////////////////////////////////////////////
+                // ③ シーン別
+                ////////////////////////////////////////////////////////////
                 _SceneSection(
-                  sceneMap: sceneMap,
+                  sceneList: sceneList,
                   selectedIndex: _selectedSceneIndex,
                   onSceneChanged: (i) {
                     setState(() => _selectedSceneIndex = i);
                   },
                 ),
 
-                // ④ 今日の天気（詳細）
-                _WeatherDetailSection(weatherAsync: weatherAsync),
-
-                // ⑤ 楽天おすすめ商品（簡易版）
+                ////////////////////////////////////////////////////////////
+                // ④ 楽天おすすめ
+                ////////////////////////////////////////////////////////////
                 _ProductsSection(clothesAsync: clothesAsync),
               ],
             ),
@@ -118,123 +110,210 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-//
-// ---------------------------------------------------------
-// ① ヒーローエリア
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
+// ① Google Weather 風トップエリア（完成版）
+///////////////////////////////////////////////////////////////////////////////
 class _HeroSection extends StatelessWidget {
   final AsyncValue<dynamic> weatherAsync;
   final AsyncValue<dynamic> clothesAsync;
 
   const _HeroSection({required this.weatherAsync, required this.clothesAsync});
 
+  // 天気に応じてグラデーションを変える（簡易版）
+  LinearGradient _buildBackground(AsyncValue<dynamic> weatherAsync) {
+    return weatherAsync.maybeWhen(
+      data: (w) {
+        final condition = (w.condition ?? '').toString().toLowerCase();
+
+        if (condition.contains('rain') || condition.contains('雨')) {
+          // 雨：少し落ち着いた青
+          return const LinearGradient(
+            colors: [Color(0xFF6C8DDC), Color(0xFFB3C9FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          );
+        } else if (condition.contains('cloud') ||
+            condition.contains('曇') ||
+            condition.contains('くもり')) {
+          // 曇り：グレー寄りの青
+          return const LinearGradient(
+            colors: [Color(0xFF9FB3D9), Color(0xFFD7E3F5)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          );
+        } else if (condition.contains('snow') || condition.contains('雪')) {
+          // 雪：少し白っぽい寒色
+          return const LinearGradient(
+            colors: [Color(0xFFE3F2FD), Color(0xFFB3E5FC)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          );
+        } else {
+          // 晴れ・その他：Pixel Weather っぽい明るい空色
+          return const LinearGradient(
+            colors: [Color(0xFF7EC8FF), Color(0xFFE3F4FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          );
+        }
+      },
+      orElse: () => const LinearGradient(
+        colors: [Color(0xFF7EC8FF), Color(0xFFE3F4FF)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFE3F4FF), Color(0xFFF9FCFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-      child: Row(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 80, 20, 32),
+      decoration: BoxDecoration(gradient: _buildBackground(weatherAsync)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 左：アイコン＋温度
-          Expanded(
-            flex: 2,
-            child: weatherAsync.when(
-              data: (w) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    WeatherIcon(
-                      condition: w.condition,
-                      size: 48,
-                      color: AppTheme.primaryBlue,
+          // --------------------------
+          // 天気アイコン + 気温 + 地域表示
+          // --------------------------
+          weatherAsync.when(
+            data: (w) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 大きな天気アイコン（Pixel Weather 風）
+                  WeatherIcon(
+                    condition: w.condition,
+                    size: 96,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 現在気温：画面中央にドンと表示
+                  Text(
+                    '${w.value.toStringAsFixed(0)}°',
+                    style: textTheme.displayMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      height: 0.9,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${w.value.toStringAsFixed(1)}℃',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.primaryBlue,
-                        fontWeight: FontWeight.bold,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+
+                  // 体感温度
+                  Text(
+                    '体感 ${w.feelsLike.toStringAsFixed(0)}°',
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 場所（地域名）
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.place_outlined,
+                        size: 16,
+                        color: Colors.white70,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '体感 ${w.feelsLike.toStringAsFixed(1)}℃',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      w.region,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
-                    ),
-                  ],
-                );
-              },
-              loading: () => const _HeroSkeleton(),
-              error: (_, __) => Text(
-                '天気を取得できませんでした',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        w.region,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              height: 160,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
+            ),
+            error: (_, __) => Text(
+              '天気を取得できません',
+              style: textTheme.bodyMedium?.copyWith(color: Colors.white),
             ),
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(height: 24),
 
-          // 右：ひとことメッセージ
-          Expanded(
-            flex: 3,
-            child: clothesAsync.when(
-              data: (c) {
-                final summary = c.summary as String;
-                return Container(
-                  padding: const EdgeInsets.all(12),
+          // --------------------------
+          // 今日のひとこと（Pixel の AQI カード風）
+          // --------------------------
+          clothesAsync.when(
+            data: (c) {
+              final summary = c.summary as String;
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withOpacity(0.96),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE0EDF5)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '今日のひとこと',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        style: textTheme.labelLarge?.copyWith(
                           color: AppTheme.primaryBlue,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         summary,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textDark,
+                        ),
                       ),
                     ],
                   ),
-                );
-              },
-              loading: () => const _HeroSkeleton(),
-              error: (_, __) => Container(
-                padding: const EdgeInsets.all(12),
+                ),
+              );
+            },
+            loading: () => const SizedBox(
+              height: 48,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (_, __) => ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE0EDF5)),
                 ),
                 child: Text(
-                  '服装の情報を読み込み中です',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  '服装データを取得できませんでした',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textDark,
+                  ),
                 ),
               ),
             ),
@@ -245,22 +324,36 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _HeroSkeleton extends StatelessWidget {
-  const _HeroSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 80,
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-    );
-  }
+// 今日のひとことカード（共通）
+Widget _buildHintCard(BuildContext context, String summary) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    margin: const EdgeInsets.only(top: 8),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.95),
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '今日のひとこと',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: AppTheme.primaryBlue,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(summary, style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    ),
+  );
 }
 
-//
-// ---------------------------------------------------------
-// ② 今日の服装ナビ（メインカード）
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
+// ② 今日の服装ナビ（カード）
+///////////////////////////////////////////////////////////////////////////////
 class _MainClothesSection extends StatelessWidget {
   final AsyncValue<dynamic> clothesAsync;
 
@@ -268,9 +361,8 @@ class _MainClothesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionContainer(
+    return _Section(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
             icon: Icons.checkroom_outlined,
@@ -284,9 +376,12 @@ class _MainClothesSection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           clothesAsync.when(
-            data: (c) => _MainClothesCard(c),
+            data: (c) => GestureDetector(
+              onTap: () => _openClothesSheet(context, c),
+              child: _MainClothesCard(c),
+            ),
             loading: () => const _LoadingCard(),
-            error: (_, __) => const _ErrorMessage('服装情報を取得できませんでした'),
+            error: (_, __) => const _ErrorMessage('服装を取得できませんでした'),
           ),
         ],
       ),
@@ -301,55 +396,28 @@ class _MainClothesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> layers = List<String>.from(c.layers ?? []);
+    final layers = List<String>.from(c.layers ?? []);
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ラベル
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6F4FF),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                '今日のおすすめ',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryBlue,
-                ),
-              ),
-            ),
+            Text(c.summary, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-
-            Text(
-              c.summary as String,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-
-            const SizedBox(height: 12),
-
             Wrap(
               spacing: 8,
               runSpacing: 4,
               children: layers.map((l) => Chip(label: Text(l))).toList(),
             ),
-
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                '気温 ${c.temperature.value.toStringAsFixed(1)}℃'
-                ' / 体感 ${c.temperature.feelsLike.toStringAsFixed(1)}℃',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                '気温 ${c.temperature.value}° / 体感 ${c.temperature.feelsLike}°',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
           ],
@@ -359,32 +427,25 @@ class _MainClothesCard extends StatelessWidget {
   }
 }
 
-//
-// ---------------------------------------------------------
-// ③ シーン別タブ＋カード
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
+// ③ シーン別
+///////////////////////////////////////////////////////////////////////////////
 class _SceneSection extends StatelessWidget {
-  final Map<String, List<String>> sceneMap;
+  final List<SceneClothes> sceneList;
   final int selectedIndex;
   final ValueChanged<int> onSceneChanged;
 
   const _SceneSection({
-    required this.sceneMap,
+    required this.sceneList,
     required this.selectedIndex,
     required this.onSceneChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (sceneMap.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    final scene = sceneList[selectedIndex];
 
-    final sceneNames = sceneMap.keys.toList();
-    final currentScene = sceneNames[selectedIndex];
-    final suggestions = sceneMap[currentScene] ?? [];
-
-    return _SectionContainer(
+    return _Section(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -394,23 +455,18 @@ class _SceneSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // タブ（室内 / おでかけ / 公園 / 保育園）
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: List.generate(sceneNames.length, (i) {
+              children: List.generate(sceneList.length, (i) {
                 final isActive = i == selectedIndex;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(sceneNames[i]),
+                    label: Text(sceneList[i].scene),
                     selected: isActive,
                     onSelected: (_) => onSceneChanged(i),
                     selectedColor: AppTheme.primaryBlue.withOpacity(0.15),
-                    labelStyle: TextStyle(
-                      color: isActive ? AppTheme.primaryBlue : Colors.grey[700],
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    ),
                   ),
                 );
               }),
@@ -419,7 +475,7 @@ class _SceneSection extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // 選択中シーンのカード
+          // シーンカード
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -430,15 +486,17 @@ class _SceneSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    currentScene,
+                    scene.scene,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  const SizedBox(height: 8),
+                  Text(scene.comment),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children: suggestions
-                        .map((s) => Chip(label: Text(s)))
+                    children: scene.items
+                        .map((i) => Chip(label: Text(i)))
                         .toList(),
                   ),
                 ],
@@ -451,99 +509,9 @@ class _SceneSection extends StatelessWidget {
   }
 }
 
-//
-// ---------------------------------------------------------
-// ④ 今日の天気（詳細）
-// ---------------------------------------------------------
-class _WeatherDetailSection extends StatelessWidget {
-  final AsyncValue<dynamic> weatherAsync;
-
-  const _WeatherDetailSection({required this.weatherAsync});
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(
-            icon: Icons.cloud_outlined,
-            title: '今日の天気',
-            action: TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRouter.weatherDetail);
-              },
-              child: const Text('詳細を見る'),
-            ),
-          ),
-          const SizedBox(height: 16),
-          weatherAsync.when(
-            data: (w) => _WeatherCard(w),
-            loading: () => const _LoadingCard(),
-            error: (_, __) => const _ErrorMessage('天気を取得できませんでした'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeatherCard extends StatelessWidget {
-  final dynamic w;
-
-  const _WeatherCard(this.w);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            WeatherIcon(
-              condition: w.condition,
-              size: 40,
-              color: AppTheme.primaryBlue,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${w.value.toStringAsFixed(1)}℃',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryBlue,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '体感 ${w.feelsLike.toStringAsFixed(1)}℃',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '湿度 ${w.humidity}%・風速 ${w.windSpeed}m/s',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-//
-// ---------------------------------------------------------
-// ⑤ 楽天おすすめ商品（簡易版）
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
+// ④ 楽天おすすめ
+///////////////////////////////////////////////////////////////////////////////
 class _ProductsSection extends StatelessWidget {
   final AsyncValue<dynamic> clothesAsync;
 
@@ -551,7 +519,7 @@ class _ProductsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionContainer(
+    return _Section(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -560,47 +528,108 @@ class _ProductsSection extends StatelessWidget {
             title: '楽天のおすすめ',
           ),
           const SizedBox(height: 12),
+
           clothesAsync.when(
             data: (c) {
               final products = c.products as List<dynamic>? ?? [];
+
               if (products.isEmpty) {
-                return Text(
-                  'おすすめ商品はありません',
-                  style: Theme.of(context).textTheme.bodySmall,
-                );
+                return const Text('おすすめ商品はありません');
               }
 
-              return Column(
-                children: products.take(3).map((p) {
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 0,
-                    ),
-                    leading: const Icon(Icons.image_outlined),
-                    title: Text(
-                      p.name as String,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      '${p.shop} / ${p.price}円',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () {
-                      // 詳細画面・外部ブラウザに飛ばす処理は後で
-                    },
-                  );
-                }).toList(),
+              return SizedBox(
+                height: 200,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: products.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final p = products[index];
+                    return _ProductCard(product: p);
+                  },
+                ),
               );
             },
             loading: () => const _LoadingCard(),
-            error: (_, __) => Text(
-              '商品情報を取得できませんでした',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.red),
+            error: (_, __) => const Text('商品情報を取得できませんでした'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// 商品カード
+///////////////////////////////////////////////////////////////////////////////
+class _ProductCard extends StatelessWidget {
+  final dynamic product;
+  const _ProductCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = product.imageUrl ?? '';
+    final name = product.name ?? '';
+    final price = product.price ?? '';
+    final shop = product.shop ?? '';
+
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE7EDF3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+            child: imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    height: 100,
+                    width: 160,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    height: 100,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image_not_supported),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(
+                  '$price 円',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppTheme.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  shop,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
             ),
           ),
         ],
@@ -609,54 +638,56 @@ class _ProductsSection extends StatelessWidget {
   }
 }
 
-//
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
 // 共通セクションコンテナ
-// ---------------------------------------------------------
-class _SectionContainer extends StatelessWidget {
+///////////////////////////////////////////////////////////////////////////////
+class _Section extends StatelessWidget {
   final Widget child;
-
-  const _SectionContainer({required this.child});
+  const _Section({required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF3F9FD),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      color: const Color(0xFFF2F7FC),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       child: child,
     );
   }
 }
 
-//
-// ---------------------------------------------------------
-// ローディング / エラー
-// ---------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////
+// 共通ローディング / エラー
+///////////////////////////////////////////////////////////////////////////////
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
-      child: SizedBox(
-        height: 80,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
+    return const SizedBox(
+      height: 80,
+      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }
 
 class _ErrorMessage extends StatelessWidget {
   final String message;
-
   const _ErrorMessage(this.message);
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      message,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
-    );
+    return Text(message, style: const TextStyle(color: Colors.red));
   }
+}
+
+void _openClothesSheet(BuildContext context, dynamic clothes) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: false,
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (_, __, ___) {
+      return AnimatedClothesBottomSheet(clothes: clothes);
+    },
+  );
 }

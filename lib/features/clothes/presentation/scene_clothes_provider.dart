@@ -1,34 +1,83 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'clothes_providers.dart';
 
-/// シーン別の服装アドバイス
-final sceneClothesProvider = Provider<Map<String, List<String>>>((ref) {
+/// --------------------------------------------
+/// シーン別服装のデータモデル
+/// --------------------------------------------
+class SceneClothes {
+  final String scene;
+  final String comment;
+  final List<String> items;
+
+  const SceneClothes({
+    required this.scene,
+    required this.comment,
+    required this.items,
+  });
+}
+
+/// --------------------------------------------
+/// シーン別服装アドバイス Provider
+/// （室内 / おでかけ / 学校・保育園）
+/// --------------------------------------------
+final sceneClothesProvider = Provider<List<SceneClothes>>((ref) {
   final clothes = ref.watch(todayClothesProvider).value;
 
+  // まだ服装データが取得できていない場合
   if (clothes == null) {
-    return {
-      "室内": ["読み込み中…"],
-      "おでかけ": ["読み込み中…"],
-      "公園遊び": ["読み込み中…"],
-      "保育園": ["読み込み中…"],
-    };
+    return const [
+      SceneClothes(scene: '室内', comment: '読み込み中…', items: ['…']),
+      SceneClothes(scene: 'おでかけ', comment: '読み込み中…', items: ['…']),
+      SceneClothes(scene: '学校・保育園', comment: '読み込み中…', items: ['…']),
+    ];
   }
 
   final temp = clothes.temperature.feelsLike;
 
-  return {
-    "室内": _buildIndoor(temp),
-    "おでかけ": _buildOutdoor(temp),
-    "公園遊び": _buildPark(temp),
-    "保育園": _buildNursery(temp),
-  };
+  return [
+    SceneClothes(
+      scene: '室内',
+      comment: _indoorComment(temp),
+      items: _buildIndoor(temp),
+    ),
+    SceneClothes(
+      scene: 'おでかけ',
+      comment: _outdoorComment(temp),
+      items: _buildOutdoor(temp),
+    ),
+    SceneClothes(
+      scene: '学校・保育園',
+      comment: _nurseryComment(temp),
+      items: _buildNursery(temp),
+    ),
+  ];
 });
 
-//
-// ---------------------------------------------------------
-// 個別ロジック
-// ---------------------------------------------------------
+/// ---------------------------------------------------------
+/// コメント（シーン説明）
+/// ---------------------------------------------------------
+String _indoorComment(double t) {
+  if (t < 10) return '寒い日は暖かい室内でも保温が必要です';
+  if (t < 18) return '室内では薄手の調節しやすい服が快適です';
+  return '軽装で OK。動きやすさを重視しましょう';
+}
 
+String _outdoorComment(double t) {
+  if (t < 5) return 'しっかり防寒して短時間の外出も安心に';
+  if (t < 12) return 'パーカーや羽織りで調整しやすくしましょう';
+  if (t < 18) return '軽い羽織りで快適に過ごせます';
+  return '日よけ対策をしっかりしましょう';
+}
+
+String _nurseryComment(double t) {
+  if (t < 10) return '外遊びに備えて動きやすい防寒が必要です';
+  if (t < 18) return '薄手の長袖がちょうどよい季節です';
+  return '動きやすい軽装で過ごしやすい気温です';
+}
+
+// ---------------------------------------------------------
+// 推奨服装アイテム
+// ---------------------------------------------------------
 List<String> _buildIndoor(double t) {
   if (t < 10) return ["長袖Tシャツ", "裏起毛トレーナー", "暖かいズボン"];
   if (t < 18) return ["長袖Tシャツ", "薄手カーディガン"];
@@ -40,12 +89,6 @@ List<String> _buildOutdoor(double t) {
   if (t < 12) return ["パーカー", "ウィンドブレーカー", "長袖Tシャツ"];
   if (t < 18) return ["薄手パーカー", "長袖Tシャツ"];
   return ["半袖Tシャツ", "日よけ帽子"];
-}
-
-List<String> _buildPark(double t) {
-  if (t < 10) return ["動きやすい厚手アウター", "長ズボン"];
-  if (t < 18) return ["薄手パーカー", "動きやすい長ズボン"];
-  return ["半袖Tシャツ", "ショートパンツ", "帽子"];
 }
 
 List<String> _buildNursery(double t) {

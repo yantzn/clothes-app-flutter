@@ -160,7 +160,7 @@ class ClothesDetailPage extends ConsumerWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: CachedNetworkImage(
-                            imageUrl: p.image,
+                            imageUrl: p.imageUrl,
                             width: 70,
                             height: 70,
                             fit: BoxFit.cover,
