@@ -32,12 +32,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final weatherAsync = ref.watch(todayWeatherProvider);
     final clothesAsync = ref.watch(todayClothesProvider);
-    final sceneList = ref.watch(sceneClothesProvider);
+    final baseScenes = ref.watch(sceneClothesProvider);
+
+    /// ---------------------------------------------------------
+    /// ● 今日 / 学校・保育園 を除外した SceneList を作成
+    /// ---------------------------------------------------------
+    final filteredScenes = baseScenes.where((s) {
+      return s.scene.contains('室内') || s.scene.contains('おでかけ');
+    }).toList();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
 
-      // Google Weather 風の透明ナビゲーション（不要なら削除可）
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -52,7 +58,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             setState(() => _currentIndex = index);
             switch (index) {
               case 1:
-                Navigator.pushNamed(context, AppRouter.clothesDetail);
                 break;
               case 2:
                 Navigator.pushNamed(context, AppRouter.settings);
@@ -74,7 +79,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               children: [
                 ////////////////////////////////////////////////////////////
-                // ① TOP：Google Weather 風 Hero（背景付き大エリア）
+                // ① Hero セクション
                 ////////////////////////////////////////////////////////////
                 _HeroSection(
                   weatherAsync: weatherAsync,
@@ -84,13 +89,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ////////////////////////////////////////////////////////////
                 // ② 今日の服装ナビ
                 ////////////////////////////////////////////////////////////
+                /*
                 _MainClothesSection(clothesAsync: clothesAsync),
+                */
 
                 ////////////////////////////////////////////////////////////
-                // ③ シーン別
+                // ③ シーン別（室内・おでかけのみ）
                 ////////////////////////////////////////////////////////////
                 _SceneSection(
-                  sceneList: sceneList,
+                  sceneList: filteredScenes,
                   selectedIndex: _selectedSceneIndex,
                   onSceneChanged: (i) {
                     setState(() => _selectedSceneIndex = i);
@@ -111,7 +118,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ① Google Weather 風トップエリア（完成版）
+// ① Hero セクション（既存そのまま）
 ///////////////////////////////////////////////////////////////////////////////
 class _HeroSection extends StatelessWidget {
   final AsyncValue<dynamic> weatherAsync;
@@ -119,14 +126,12 @@ class _HeroSection extends StatelessWidget {
 
   const _HeroSection({required this.weatherAsync, required this.clothesAsync});
 
-  // 天気に応じてグラデーションを変える（簡易版）
   LinearGradient _buildBackground(AsyncValue<dynamic> weatherAsync) {
     return weatherAsync.maybeWhen(
       data: (w) {
         final condition = (w.condition ?? '').toString().toLowerCase();
 
         if (condition.contains('rain') || condition.contains('雨')) {
-          // 雨：少し落ち着いた青
           return const LinearGradient(
             colors: [Color(0xFF6C8DDC), Color(0xFFB3C9FF)],
             begin: Alignment.topCenter,
@@ -135,21 +140,18 @@ class _HeroSection extends StatelessWidget {
         } else if (condition.contains('cloud') ||
             condition.contains('曇') ||
             condition.contains('くもり')) {
-          // 曇り：グレー寄りの青
           return const LinearGradient(
             colors: [Color(0xFF9FB3D9), Color(0xFFD7E3F5)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           );
         } else if (condition.contains('snow') || condition.contains('雪')) {
-          // 雪：少し白っぽい寒色
           return const LinearGradient(
             colors: [Color(0xFFE3F2FD), Color(0xFFB3E5FC)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           );
         } else {
-          // 晴れ・その他：Pixel Weather っぽい明るい空色
           return const LinearGradient(
             colors: [Color(0xFF7EC8FF), Color(0xFFE3F4FF)],
             begin: Alignment.topCenter,
@@ -171,29 +173,23 @@ class _HeroSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 80, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 13, 20, 32),
       decoration: BoxDecoration(gradient: _buildBackground(weatherAsync)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // --------------------------
-          // 天気アイコン + 気温 + 地域表示
-          // --------------------------
           weatherAsync.when(
             data: (w) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 大きな天気アイコン（Pixel Weather 風）
                   WeatherIcon(
                     condition: w.condition,
                     size: 96,
                     color: Colors.white,
                   ),
                   const SizedBox(height: 12),
-
-                  // 現在気温：画面中央にドンと表示
                   Text(
                     '${w.value.toStringAsFixed(0)}°',
                     style: textTheme.displayMedium?.copyWith(
@@ -204,8 +200,6 @@ class _HeroSection extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
-
-                  // 体感温度
                   Text(
                     '体感 ${w.feelsLike.toStringAsFixed(0)}°',
                     style: textTheme.bodyLarge?.copyWith(
@@ -215,7 +209,6 @@ class _HeroSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // 場所（地域名）
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -253,9 +246,6 @@ class _HeroSection extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // --------------------------
-          // 今日のひとこと（Pixel の AQI カード風）
-          // --------------------------
           clothesAsync.when(
             data: (c) {
               final summary = c.summary as String;
@@ -324,39 +314,12 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-// 今日のひとことカード（共通）
-Widget _buildHintCard(BuildContext context, String summary) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    margin: const EdgeInsets.only(top: 8),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.95),
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '今日のひとこと',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: AppTheme.primaryBlue,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(summary, style: Theme.of(context).textTheme.bodyMedium),
-      ],
-    ),
-  );
-}
+///////////////////////////////////////////////////////////////////////////////
+// 今日の服装ナビ（既存のまま / 必要なら後で削除可能）
+///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
-// ② 今日の服装ナビ（カード）
-///////////////////////////////////////////////////////////////////////////////
 class _MainClothesSection extends StatelessWidget {
   final AsyncValue<dynamic> clothesAsync;
-
   const _MainClothesSection({required this.clothesAsync});
 
   @override
@@ -364,16 +327,7 @@ class _MainClothesSection extends StatelessWidget {
     return _Section(
       child: Column(
         children: [
-          SectionHeader(
-            icon: Icons.checkroom_outlined,
-            title: '今日の服装ナビ',
-            action: TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRouter.clothesDetail);
-              },
-              child: const Text('くわしく見る'),
-            ),
-          ),
+          SectionHeader(icon: Icons.checkroom_outlined, title: '今日の服装ナビ'),
           const SizedBox(height: 16),
           clothesAsync.when(
             data: (c) => GestureDetector(
@@ -391,7 +345,6 @@ class _MainClothesSection extends StatelessWidget {
 
 class _MainClothesCard extends StatelessWidget {
   final dynamic c;
-
   const _MainClothesCard(this.c);
 
   @override
@@ -460,9 +413,15 @@ class _SceneSection extends StatelessWidget {
             child: Row(
               children: List.generate(sceneList.length, (i) {
                 final isActive = i == selectedIndex;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
+                    avatar: Icon(
+                      _sceneIcon(sceneList[i].scene),
+                      size: 18,
+                      color: isActive ? AppTheme.primaryBlue : Colors.grey[500],
+                    ),
                     label: Text(sceneList[i].scene),
                     selected: isActive,
                     onSelected: (_) => onSceneChanged(i),
@@ -475,43 +434,145 @@ class _SceneSection extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // シーンカード
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    scene.scene,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(scene.comment),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: scene.items
-                        .map((i) => Chip(label: Text(i)))
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _SceneDetailCard(scene: scene),
         ],
       ),
     );
   }
+
+  IconData _sceneIcon(String name) {
+    if (name.contains('室内')) return Icons.home_rounded;
+    if (name.contains('おでかけ')) return Icons.directions_walk_rounded;
+    return Icons.checkroom_outlined;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ④ 楽天おすすめ
+// シーン詳細カード
 ///////////////////////////////////////////////////////////////////////////////
+
+class _SceneDetailCard extends StatelessWidget {
+  final SceneClothes scene;
+  const _SceneDetailCard({required this.scene});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0.8,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _sceneIcon(scene.scene),
+                  size: 24,
+                  color: AppTheme.primaryBlue,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  scene.scene,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            Text(
+              scene.comment,
+              style: textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+            ),
+
+            const SizedBox(height: 16),
+
+            Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFFF7F9FB),
+                border: Border.all(color: const Color(0xFFE0E6EE)),
+              ),
+              child: const Center(
+                child: Text(
+                  '服装イラスト（後で画像差し込み）',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              '今日のおすすめ',
+              style: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: scene.items
+                  .map(
+                    (i) => Chip(
+                      label: Text(i),
+                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
+                    ),
+                  )
+                  .toList(),
+            ),
+
+            const SizedBox(height: 15),
+
+            if (scene.medicalNote != null && scene.medicalNote!.isNotEmpty)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: AppTheme.primaryBlue,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      scene.medicalNote!,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _sceneIcon(String name) {
+    if (name == '今日') return Icons.today_rounded;
+    if (name.contains('室内')) return Icons.home_rounded;
+    if (name.contains('おでかけ')) return Icons.directions_walk_rounded;
+    return Icons.school_rounded;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// ④ 楽天おすすめ（既存）
+///////////////////////////////////////////////////////////////////////////////
+
 class _ProductsSection extends StatelessWidget {
   final AsyncValue<dynamic> clothesAsync;
 
@@ -525,7 +586,7 @@ class _ProductsSection extends StatelessWidget {
         children: [
           const SectionHeader(
             icon: Icons.shopping_bag_outlined,
-            title: '楽天のおすすめ',
+            title: '今日のお天気アイテム',
           ),
           const SizedBox(height: 12),
 
@@ -560,8 +621,9 @@ class _ProductsSection extends StatelessWidget {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// 商品カード
+// 商品カード（既存）
 ///////////////////////////////////////////////////////////////////////////////
+
 class _ProductCard extends StatelessWidget {
   final dynamic product;
   const _ProductCard({required this.product});
@@ -641,6 +703,7 @@ class _ProductCard extends StatelessWidget {
 ///////////////////////////////////////////////////////////////////////////////
 // 共通セクションコンテナ
 ///////////////////////////////////////////////////////////////////////////////
+
 class _Section extends StatelessWidget {
   final Widget child;
   const _Section({required this.child});
@@ -657,8 +720,9 @@ class _Section extends StatelessWidget {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// 共通ローディング / エラー
+// ローディング / エラー（既存）
 ///////////////////////////////////////////////////////////////////////////////
+
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
 

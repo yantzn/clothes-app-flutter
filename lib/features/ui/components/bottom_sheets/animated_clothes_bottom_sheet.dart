@@ -1,11 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme.dart';
-import '../../components/product_card.dart';
 
 class AnimatedClothesBottomSheet extends StatefulWidget {
   final dynamic clothes;
-
   const AnimatedClothesBottomSheet({super.key, required this.clothes});
 
   @override
@@ -16,19 +15,17 @@ class AnimatedClothesBottomSheet extends StatefulWidget {
 class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _bounceAnimation;
+  late Animation<double> _bounce;
 
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 650),
       vsync: this,
+      duration: const Duration(milliseconds: 650),
     );
 
-    // 0.88 → 1.08 → 1.0 のバウンス
-    _bounceAnimation = TweenSequence([
+    _bounce = TweenSequence([
       TweenSequenceItem(
         tween: Tween(
           begin: 0.88,
@@ -60,19 +57,18 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    final clothes = widget.clothes;
-    final layers = List<String>.from(clothes.layers ?? []);
+    final c = widget.clothes;
 
     return Stack(
       children: [
-        // ------------------------------
-        // ① 背景ぼかし + フェード
-        // ------------------------------
+        // --------------------------------
+        // 背景ぼかし
+        // --------------------------------
         GestureDetector(
           onTap: _close,
           child: AnimatedBuilder(
             animation: _controller,
-            builder: (context, child) {
+            builder: (_, __) {
               return Opacity(
                 opacity: (_controller.value * 0.6).clamp(0, 0.6),
                 child: BackdropFilter(
@@ -87,14 +83,14 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
           ),
         ),
 
-        // ------------------------------
-        // ② バウンスする BottomSheet 本体
-        // ------------------------------
+        // --------------------------------
+        // BottomSheet 本体
+        // --------------------------------
         AnimatedBuilder(
-          animation: _bounceAnimation,
-          builder: (context, child) {
+          animation: _bounce,
+          builder: (_, child) {
             return Transform.scale(
-              scale: _bounceAnimation.value,
+              scale: _bounce.value,
               alignment: Alignment.bottomCenter,
               child: child,
             );
@@ -102,28 +98,17 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
           child: Align(
             alignment: Alignment.bottomCenter,
             child: FractionallySizedBox(
-              heightFactor: 0.78,
-
+              heightFactor: 0.86,
               child: Material(
-                // ← ★ ここを追加！
                 color: Colors.white,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent, // ← Material が背景になるため透明に
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(28),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // ハンドルバー
+                      // ——— ハンドルバー ———
                       Container(
                         width: 44,
                         height: 5,
@@ -134,6 +119,7 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
                         ),
                       ),
 
+                      // ——— ヘッダー ———
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -151,65 +137,184 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
 
                       const SizedBox(height: 12),
 
+                      // ——— コンテンツ全体スクロール ———
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                clothes.summary,
-                                style: Theme.of(context).textTheme.titleMedium,
+                        child: ListView(
+                          children: [
+                            // ---------------------------------------------------
+                            // 📌 サマリカード
+                            // ---------------------------------------------------
+                            Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              const SizedBox(height: 16),
-
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: layers
-                                    .map(
-                                      (l) => Chip(
-                                        label: Text(l),
-                                        backgroundColor: AppTheme.primaryBlue
-                                            .withOpacity(0.1),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              Text(
-                                '気温 ${clothes.temperature.value}° / '
-                                '体感 ${clothes.temperature.feelsLike}°',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-
-                              const SizedBox(height: 28),
-
-                              if ((clothes.products ?? []).isNotEmpty) ...[
-                                Text(
-                                  'おすすめアイテム',
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  c.summary,
                                   style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textDark,
+                                      ),
                                 ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 200,
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: clothes.products.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(width: 12),
-                                    itemBuilder: (_, i) => ProductCard(
-                                      product: clothes.products[i],
-                                    ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // ---------------------------------------------------
+                            // 📌 レイヤー構成
+                            // ---------------------------------------------------
+                            _sectionHeader(Icons.layers_outlined, 'レイヤー構成'),
+                            const SizedBox(height: 12),
+
+                            Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: c.layers
+                                      .map<Widget>(
+                                        (layer) => Chip(
+                                          label: Text(layer),
+                                          backgroundColor: AppTheme.chipBg,
+                                          labelStyle: const TextStyle(
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // ---------------------------------------------------
+                            // 📌 メモ
+                            // ---------------------------------------------------
+                            _sectionHeader(Icons.info_outline, 'メモ'),
+                            const SizedBox(height: 12),
+                            ...c.notes.map(
+                              (note) => Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    note,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: AppTheme.textDark),
                                   ),
                                 ),
-                              ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
 
-                              const SizedBox(height: 32),
+                            // ---------------------------------------------------
+                            // 📌 参考リンク
+                            // ---------------------------------------------------
+                            if (c.references.isNotEmpty) ...[
+                              _sectionHeader(Icons.link_outlined, '参考リンク'),
+                              const SizedBox(height: 12),
+                              ...c.references.map(
+                                (url) => Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: ListTile(
+                                    title: Text(
+                                      url,
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    onTap: () async {
+                                      // open URL
+                                    },
+                                  ),
+                                ),
+                              ),
                             ],
-                          ),
+                            const SizedBox(height: 20),
+
+                            // ---------------------------------------------------
+                            // 📌 楽天商品
+                            // ---------------------------------------------------
+                            _sectionHeader(
+                              Icons.shopping_bag_outlined,
+                              '楽天の商品',
+                            ),
+                            const SizedBox(height: 12),
+
+                            ...c.products.map(
+                              (p) => Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: CachedNetworkImage(
+                                          imageUrl: p.imageUrl,
+                                          width: 70,
+                                          height: 70,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              p.name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              p.shop,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${p.price} 円',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppTheme.primaryBlue,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 40),
+                          ],
                         ),
                       ),
                     ],
@@ -217,6 +322,23 @@ class _AnimatedClothesBottomSheetState extends State<AnimatedClothesBottomSheet>
                 ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primaryBlue),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textDark,
           ),
         ),
       ],
