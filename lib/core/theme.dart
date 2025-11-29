@@ -85,12 +85,10 @@ class AppTheme {
     ),
 
     // ----------------------------------------
-    // ElevatedButton
+    // ElevatedButton（活性 / 非活性 状態つき）
     // ----------------------------------------
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(primaryBlue),
-        foregroundColor: WidgetStateProperty.all(Colors.white),
         padding: WidgetStateProperty.all(
           const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         ),
@@ -98,6 +96,20 @@ class AppTheme {
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         elevation: WidgetStateProperty.all(1),
+
+        // ★ 状態に応じて色を変更：Enabled → primaryBlue / Disabled → Gray
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return Colors.grey.shade400; // 非活性
+          }
+          return primaryBlue; // 活性
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return Colors.white70; // 非活性テキスト
+          }
+          return Colors.white; // 活性テキスト
+        }),
       ),
     ),
 
@@ -114,20 +126,20 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: primaryBlue, width: 2),
+        borderSide: BorderSide(color: primaryBlue, width: 2),
         borderRadius: BorderRadius.circular(12),
       ),
       border: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
       ),
-      labelStyle: const TextStyle(fontSize: 14),
+      labelStyle: TextStyle(fontSize: 14),
     ),
 
     // ----------------------------------------
@@ -170,10 +182,7 @@ class AppTheme {
     // ----------------------------------------
     listTileTheme: const ListTileThemeData(
       iconColor: primaryBlue,
-      titleTextStyle: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
+      titleTextStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       subtitleTextStyle: TextStyle(fontSize: 13, color: textLight),
     ),
 

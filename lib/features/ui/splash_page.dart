@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../app/router.dart';
+import '../onboarding/presentation/onboarding_providers.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -13,12 +16,35 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   @override
   void initState() {
     super.initState();
+    _startAppFlow();
+  }
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRouter.home);
-      }
-    });
+  /// アプリ起動時の初回チェック & 遷移
+  Future<void> _startAppFlow() async {
+    // --- ロゴ表示演出（最低表示時間） ---
+    const minSplashDuration = Duration(seconds: 2);
+    await Future.delayed(minSplashDuration);
+
+    // --- userId 読み取り ---
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
+    if (!mounted) return;
+
+    if (userId == null) {
+      // ===================================================
+      //  初回アクセス → 利用規約へ
+      // ===================================================
+      Navigator.pushReplacementNamed(context, AppRouter.terms);
+      return;
+    }
+
+    // ===================================================
+    //  2回目以降 → userId を Riverpod にセット → ホームへ
+    // ===================================================
+    ref.read(userIdProvider.notifier).state = userId;
+
+    Navigator.pushReplacementNamed(context, AppRouter.home);
   }
 
   @override
@@ -30,17 +56,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // SVG ロゴ
-              // SvgPicture.asset(
-              //   'assets/svg/logo_hanger.svg',
-              //   width: 120,
-              //   height: 120,
-              //   colorFilter: ColorFilter.mode(
-              //     Color(0xFF3AAFD9),
-              //     BlendMode.srcIn,
-              //   ),
-              // ),
-              // ここは実際には SvgPicture.asset に戻す
+              // TODO: SvgPicture に差し替え予定
               SizedBox(height: 24),
               Text(
                 'お天気服装',
