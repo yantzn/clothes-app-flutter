@@ -1,3 +1,5 @@
+import 'package:clothes_app/features/clothes/domain/entities/clothes_suggestion.dart';
+import 'package:clothes_app/features/clothes/presentation/scene_clothes_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,9 +9,10 @@ import '../../app/router.dart';
 // ドメイン側プロバイダ
 import '../../features/weather/presentation/weather_providers.dart';
 import '../../features/clothes/presentation/clothes_providers.dart';
-import '../../features/clothes/presentation/scene_clothes_provider.dart';
+import '../../features/clothes/presentation/family_scene_clothes_provider.dart';
 
 // 共通コンポーネント
+import '../onboarding/presentation/onboarding_providers.dart';
 import 'components/custom_bottom_nav.dart';
 import 'components/section_header.dart';
 import 'components/weather_icon.dart';
@@ -26,20 +29,14 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
-  int _selectedSceneIndex = 0;
+  int _selectedFamilyIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final weatherAsync = ref.watch(todayWeatherProvider);
     final clothesAsync = ref.watch(todayClothesProvider);
-    final baseScenes = ref.watch(sceneClothesProvider);
-
-    /// ---------------------------------------------------------
-    /// ● 今日 / 学校・保育園 を除外した SceneList を作成
-    /// ---------------------------------------------------------
-    final filteredScenes = baseScenes.where((s) {
-      return s.scene.contains('室内') || s.scene.contains('おでかけ');
-    }).toList();
+    final familySuggestionsMap = ref.watch(familySuggestionsProvider);
+    final families = ref.watch(onboardingProvider.select((s) => s.families));
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -94,13 +91,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                 */
 
                 ////////////////////////////////////////////////////////////
-                // ③ シーン別（室内・おでかけのみ）
+                // ③ 家族別の服装提案（タブはニックネーム）
                 ////////////////////////////////////////////////////////////
-                _SceneSection(
-                  sceneList: filteredScenes,
-                  selectedIndex: _selectedSceneIndex,
-                  onSceneChanged: (i) {
-                    setState(() => _selectedSceneIndex = i);
+                Builder(
+                  builder: (context) {
+                    final nicknames = familySuggestionsMap.keys.toList();
+                    // インデックスが範囲外にならないよう調整
+                    final safeIndex = nicknames.isEmpty
+                        ? 0
+                        : (_selectedFamilyIndex.clamp(0, nicknames.length - 1));
+
+                    return _FamilySection(
+                      familiesNicknames: nicknames,
+                      suggestionsMap: familySuggestionsMap,
+                      selectedIndex: safeIndex,
+                      onFamilyChanged: (i) {
+                        setState(() => _selectedFamilyIndex = i);
+                      },
+                    );
                   },
                 ),
 
@@ -189,7 +197,8 @@ class _HeroSection extends StatelessWidget {
                     size: 96,
                     color: Colors.white,
                   ),
-                  const SizedBox(height: 12),
+                  // タイトル直下の余白を最小化
+                  const SizedBox.shrink(),
                   Text(
                     '${w.value.toStringAsFixed(0)}°',
                     style: textTheme.displayMedium?.copyWith(
@@ -332,7 +341,12 @@ class _MainClothesSection extends StatelessWidget {
           clothesAsync.when(
             data: (c) => GestureDetector(
               onTap: () => _openClothesSheet(context, c),
-              child: _MainClothesCard(c),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: _MainClothesCard(c),
+                ),
+              ),
             ),
             loading: () => const _LoadingCard(),
             error: (_, __) => const _ErrorMessage('服装を取得できませんでした'),
@@ -387,11 +401,15 @@ class _SceneSection extends StatelessWidget {
   final List<SceneClothes> sceneList;
   final int selectedIndex;
   final ValueChanged<int> onSceneChanged;
+  final double leadingInset;
+  final double extraLeftShift;
 
   const _SceneSection({
     required this.sceneList,
     required this.selectedIndex,
     required this.onSceneChanged,
+    this.leadingInset = 0,
+    this.extraLeftShift = 0,
   });
 
   @override
@@ -402,39 +420,63 @@ class _SceneSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(
-            icon: Icons.child_care_outlined,
-            title: 'シーン別の服装',
-          ),
-          const SizedBox(height: 12),
+          // 先頭余白を詰めてタイトル直下とのギャップを最小化
+          const SizedBox.shrink(),
 
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(sceneList.length, (i) {
-                final isActive = i == selectedIndex;
+          Transform.translate(
+            offset: Offset(extraLeftShift, 0),
+            child: Container(
+              padding: EdgeInsets.only(left: leadingInset),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(sceneList.length, (i) {
+                    final isActive = i == selectedIndex;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    avatar: Icon(
-                      _sceneIcon(sceneList[i].scene),
-                      size: 18,
-                      color: isActive ? AppTheme.primaryBlue : Colors.grey[500],
-                    ),
-                    label: Text(sceneList[i].scene),
-                    selected: isActive,
-                    onSelected: (_) => onSceneChanged(i),
-                    selectedColor: AppTheme.primaryBlue.withOpacity(0.15),
-                  ),
-                );
-              }),
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        avatar: Icon(
+                          _sceneIcon(sceneList[i].scene),
+                          size: 18,
+                          color: isActive
+                              ? AppTheme.primaryBlue
+                              : Colors.grey[500],
+                        ),
+                        label: Text(sceneList[i].scene),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: const VisualDensity(
+                          horizontal: -1,
+                          vertical: -2,
+                        ),
+                        // 一文字ラベルでも見切れないように上下にも余白を付与
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        selected: isActive,
+                        onSelected: (_) => onSceneChanged(i),
+                        selectedColor: AppTheme.primaryBlue.withOpacity(0.15),
+                      ),
+                    );
+                  }),
+                ),
+              ),
             ),
           ),
 
           const SizedBox(height: 16),
 
-          _SceneDetailCard(scene: scene),
+          Transform.translate(
+            offset: Offset(extraLeftShift, 0),
+            child: Padding(
+              padding: EdgeInsets.only(left: leadingInset),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _SceneDetailCard(scene: scene),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -570,6 +612,107 @@ class _SceneDetailCard extends StatelessWidget {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// 家族別提案セクション（ニックネームタブ）
+///////////////////////////////////////////////////////////////////////////////
+class _FamilySection extends StatelessWidget {
+  final List<String> familiesNicknames;
+  final Map<String, AsyncValue<ClothesSuggestion>> suggestionsMap;
+  final int selectedIndex;
+  final ValueChanged<int> onFamilyChanged;
+
+  const _FamilySection({
+    required this.familiesNicknames,
+    required this.suggestionsMap,
+    required this.selectedIndex,
+    required this.onFamilyChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    if (familiesNicknames.isEmpty) {
+      return _Section(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
+            SizedBox(height: 12),
+            Text('家族情報が未登録です。プロフィールから追加してください。'),
+          ],
+        ),
+      );
+    }
+
+    // 家族ニックネームごとの提案を SceneClothes に変換して SceneSection を流用
+    final List<SceneClothes> sceneList = familiesNicknames.map((label) {
+      final async = suggestionsMap[label];
+      String displayLabel = label;
+      List<String> items = const [];
+      String comment = '';
+
+      if (async != null) {
+        async.when(
+          data: (c) {
+            displayLabel = _canonicalNickname(c);
+            items = List<String>.from(c.layers ?? const []);
+            comment = c.summary ?? '';
+          },
+          loading: () {
+            comment = '読み込み中…';
+          },
+          error: (_, __) {
+            comment = '服装データを取得できませんでした';
+          },
+        );
+      }
+
+      return SceneClothes(
+        scene: displayLabel,
+        comment: comment,
+        items: items,
+        medicalNote: null,
+      );
+    }).toList();
+
+    return _Section(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(icon: Icons.group_outlined, title: '本日の服装'),
+          const SizedBox(height: 4),
+          _SceneSection(
+            sceneList: sceneList,
+            selectedIndex: selectedIndex,
+            onSceneChanged: onFamilyChanged,
+            leadingInset: 0,
+            extraLeftShift: -8,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _canonicalNickname(ClothesSuggestion c) {
+  final id = (c.userId ?? '').toLowerCase();
+  if (id.contains('dad')) return 'パパ';
+  if (id.contains('daughter')) return '娘';
+  if (id.contains('son')) return '息子';
+  if (id.contains('tarou') || id.contains('self')) return 'たろう';
+  // Fallback: 年齢層からざっくり
+  switch ((c.ageGroup ?? '').toLowerCase()) {
+    case 'child':
+      return 'こども';
+    case 'adult':
+      return 'おとな';
+    default:
+      return '家族';
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // ④ 楽天おすすめ（既存）
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -581,6 +724,7 @@ class _ProductsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -706,14 +850,15 @@ class _ProductCard extends StatelessWidget {
 
 class _Section extends StatelessWidget {
   final Widget child;
-  const _Section({required this.child});
+  final EdgeInsets? padding;
+  const _Section({required this.child, this.padding});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       color: const Color(0xFFF2F7FC),
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      padding: padding ?? const EdgeInsets.fromLTRB(20, 24, 20, 24),
       child: child,
     );
   }
