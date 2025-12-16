@@ -8,13 +8,18 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // 大画面向け拡張は対象外: ほどよい3段階のみ
+    final double cardWidth = screenWidth >= 768
+        ? 220
+        : (screenWidth >= 480 ? 180 : 160);
     final imageUrl = product.imageUrl ?? '';
     final name = product.name ?? '';
     final price = product.price ?? '';
     final shop = product.shop ?? '';
 
     return Container(
-      width: 160,
+      width: cardWidth,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -39,7 +44,7 @@ class ProductCard extends StatelessWidget {
                 ? Image.network(
                     imageUrl,
                     height: 100,
-                    width: 160,
+                    width: cardWidth,
                     fit: BoxFit.cover,
                   )
                 : Container(
