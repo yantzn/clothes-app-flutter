@@ -122,23 +122,23 @@ class AppTheme {
     // ----------------------------------------
     // TextField
     // ----------------------------------------
-    inputDecorationTheme: InputDecorationTheme(
+    inputDecorationTheme: const InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey.shade300),
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: Color(0xFFE0E6EC)),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: primaryBlue, width: 2),
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: primaryBlue, width: 2),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey.shade300),
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: Color(0xFFE0E6EC)),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
-      labelStyle: const TextStyle(fontSize: 14),
+      labelStyle: TextStyle(fontSize: 14),
     ),
 
     // ----------------------------------------

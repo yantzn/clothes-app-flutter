@@ -117,13 +117,13 @@ class _FamilySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (familiesNicknames.isEmpty) {
-      return SectionContainer(
+      return const SectionContainer(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
-            const SizedBox(height: 12),
-            const Text('家族情報が未登録です。プロフィールから追加してください。'),
+            SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
+            SizedBox(height: 12),
+            Text('家族情報が未登録です。プロフィールから追加してください。'),
           ],
         ),
       );
@@ -154,5 +154,3 @@ class _FamilySection extends StatelessWidget {
     );
   }
 }
-
-// （未使用のローディング/エラーカードは削除済み）

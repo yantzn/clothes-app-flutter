@@ -1,4 +1,4 @@
-import 'rakuten_product.dart';
+// 楽天商品など外部商品データは扱わない方針のため削除
 
 /// 子どもの「今日の服装」提案ドメインモデル.
 ///
@@ -18,7 +18,6 @@ import 'rakuten_product.dart';
 ///     "notes": [ "〜メモ〜", ... ],
 ///     "references": [ "https://www.ncchd.go.jp/" ]
 ///   },
-///   "products": [ { ...楽天商品... }, ... ]
 /// }
 ///
 class ClothesSuggestion {
@@ -43,9 +42,6 @@ class ClothesSuggestion {
   /// 参考リンク（成育医療センターなど）
   final List<String> references;
 
-  /// 楽天の商品リスト（アフェリエイト表示用）
-  final List<RakutenProduct> products;
-
   const ClothesSuggestion({
     required this.userId,
     required this.ageGroup,
@@ -54,7 +50,6 @@ class ClothesSuggestion {
     required this.layers,
     required this.notes,
     required this.references,
-    required this.products,
   });
 
   /// copyWith はフォーム編集や一部更新に便利
@@ -66,7 +61,6 @@ class ClothesSuggestion {
     List<String>? layers,
     List<String>? notes,
     List<String>? references,
-    List<RakutenProduct>? products,
   }) {
     return ClothesSuggestion(
       userId: userId ?? this.userId,
@@ -76,7 +70,6 @@ class ClothesSuggestion {
       layers: layers ?? this.layers,
       notes: notes ?? this.notes,
       references: references ?? this.references,
-      products: products ?? this.products,
     );
   }
 
@@ -84,7 +77,6 @@ class ClothesSuggestion {
   factory ClothesSuggestion.fromJson(Map<String, dynamic> json) {
     final tempJson = json['temperature'] as Map<String, dynamic>? ?? {};
     final sugJson = json['suggestion'] as Map<String, dynamic>? ?? {};
-    final productsJson = json['products'] as List<dynamic>? ?? const [];
 
     return ClothesSuggestion(
       userId: json['userId'] as String? ?? '',
@@ -99,13 +91,6 @@ class ClothesSuggestion {
           .toList(),
       references: (sugJson['references'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
-          .toList(),
-      products: productsJson
-          .map(
-            (p) => RakutenProduct.fromJson(
-              p is Map<String, dynamic> ? p : Map<String, dynamic>.from(p),
-            ),
-          )
           .toList(),
     );
   }
@@ -122,7 +107,6 @@ class ClothesSuggestion {
         'notes': notes,
         'references': references,
       },
-      'products': products.map((p) => p.toJson()).toList(),
     };
   }
 }

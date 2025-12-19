@@ -118,10 +118,10 @@ class RegisterFamilyPage extends ConsumerWidget {
   // 家族ゼロの場合のカード
   // =================================================================
   Widget _emptyCard() {
-    return Card(
-      child: const SizedBox(
+    return const Card(
+      child: SizedBox(
         height: 160,
-        child: const Center(
+        child: Center(
           child: Text(
             "登録された家族はいません",
             style: TextStyle(fontSize: 15, color: AppTheme.textLight),
