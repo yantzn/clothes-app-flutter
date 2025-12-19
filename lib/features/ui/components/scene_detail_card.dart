@@ -18,100 +18,123 @@ class SceneDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    // 画面幅/親制約に応じてカードの横幅を拡張（サイズは固定）。
+    const double horizontalMargin = 16.0; // 画面端の余白想定
     // 大画面向けのスケーリングは対象外（固定サイズ）
     const double iconSize = 24;
     const double imageHeight = 120;
     const double paddingAll = 20;
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 0.8,
-      child: Padding(
-        padding: const EdgeInsets.all(paddingAll),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _sceneIcon(sceneName),
-                  size: iconSize,
-                  color: AppTheme.primaryBlue,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  sceneName,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              comment,
-              style: textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              height: imageHeight,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: const Color(0xFFF7F9FB),
-                border: Border.all(color: const Color(0xFFE0E6EE)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double containerWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final double maxCardWidth = (containerWidth - horizontalMargin * 2)
+            .clamp(320.0, 1200.0);
+        return Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: maxCardWidth,
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Center(
-                child: Text(
-                  '服装イラスト（後で画像差し込み）',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '今日のおすすめ',
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: items
-                  .map(
-                    (i) => Chip(
-                      label: Text(i),
-                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
+              elevation: 0.8,
+              child: Padding(
+                padding: const EdgeInsets.all(paddingAll),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _sceneIcon(sceneName),
+                          size: iconSize,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          sceneName,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 15),
-            if (medicalNote != null && medicalNote!.isNotEmpty)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 20,
-                    color: AppTheme.primaryBlue,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      medicalNote!,
-                      style: textTheme.bodySmall?.copyWith(
+                    const SizedBox(height: 12),
+                    Text(
+                      comment,
+                      style: textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[700],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Container(
+                      height: imageHeight,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFFF7F9FB),
+                        border: Border.all(color: const Color(0xFFE0E6EE)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '服装イラスト（後で画像差し込み）',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      '今日のおすすめ',
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: items
+                          .map(
+                            (i) => Chip(
+                              label: Text(i),
+                              backgroundColor: AppTheme.primaryBlue.withOpacity(
+                                0.08,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 15),
+                    if (medicalNote != null && medicalNote!.isNotEmpty)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: AppTheme.primaryBlue,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              medicalNote!,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 

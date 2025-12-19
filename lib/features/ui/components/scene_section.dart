@@ -3,7 +3,6 @@ import 'choice_chip_row.dart';
 import 'scene_detail_card.dart';
 import 'layout_utils.dart';
 import '../../clothes/presentation/scene_clothes_provider.dart';
-import '../../../core/theme.dart';
 
 class SceneSection extends StatelessWidget {
   final List<SceneClothes> sceneList;
@@ -26,11 +25,11 @@ class SceneSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    // 大画面の拡張は対象外: 最大幅は常に 480（ただし最小は 280）
-    final double effectiveMaxWidth = 480.0;
+    // 画面幅に応じてセクション幅を拡張（横幅のみ可変、縦は固定）
+    // 端の余白を考慮し、最小/最大幅をクランプ（320〜1200）
     final double widthConstraint = screenWidth <= 0
-        ? effectiveMaxWidth
-        : ((screenWidth - 40).clamp(280.0, effectiveMaxWidth) as double);
+        ? 480.0
+        : (screenWidth - 40.0).clamp(320.0, 1800.0);
     final scene = sceneList[selectedIndex];
 
     return Column(

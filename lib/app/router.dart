@@ -9,8 +9,6 @@ import '../features/onboarding/confirm_register_page.dart';
 // ---- Main UI ----
 import '../features/ui/splash_page.dart';
 import '../features/ui/home_page.dart';
-import '../features/ui/weather_detail_page.dart';
-import '../features/ui/clothes_detail_page.dart';
 import '../features/ui/profile_view_page.dart';
 import '../features/ui/profile_edit_page.dart';
 import '../features/ui/settings_page.dart';
@@ -65,12 +63,6 @@ class AppRouter {
       // ---------------------------------------------
       case home:
         return MaterialPageRoute(builder: (_) => const HomePage());
-
-      case weatherDetail:
-        return MaterialPageRoute(builder: (_) => const WeatherDetailPage());
-
-      case clothesDetail:
-        return MaterialPageRoute(builder: (_) => const ClothesDetailPage());
 
       // ---------------------------------------------
       // Profile

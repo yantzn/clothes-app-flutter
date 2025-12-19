@@ -22,11 +22,12 @@ class ChoiceChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // コンパクト表示のデフォルト密度（単一文字は個別に上書き）
     final visualDensity = compact
-        ? const VisualDensity(horizontal: -1, vertical: -2)
+        ? const VisualDensity(horizontal: -1, vertical: -1)
         : VisualDensity.standard;
-    final labelPadding = compact
-        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 4)
+    final baseLabelPadding = compact
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 5)
         : const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
 
     return Transform.translate(
@@ -39,6 +40,23 @@ class ChoiceChipRow extends StatelessWidget {
             children: List.generate(labels.length, (i) {
               final isActive = i == selectedIndex;
               final label = labels[i];
+              // 一文字の場合は高さを確保（余白・行間・密度・タップターゲットを調整）
+              final bool isSingleChar = label.trim().length == 1;
+              final EdgeInsets labelPadding = isSingleChar
+                  ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+                  : baseLabelPadding;
+              final TextStyle? labelStyle = isSingleChar
+                  ? Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontSize: 13,
+                      height: 1.25,
+                    )
+                  : null;
+              final VisualDensity chipDensity = isSingleChar
+                  ? const VisualDensity(horizontal: -0.5, vertical: 0)
+                  : visualDensity;
+              final MaterialTapTargetSize tapTarget = isSingleChar
+                  ? MaterialTapTargetSize.padded
+                  : MaterialTapTargetSize.shrinkWrap;
               final icon = iconBuilder?.call(label);
 
               return Padding(
@@ -53,9 +71,9 @@ class ChoiceChipRow extends StatelessWidget {
                               ? Theme.of(context).primaryColor
                               : Colors.grey[500],
                         ),
-                  label: Text(label),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: visualDensity,
+                  label: Text(label, style: labelStyle),
+                  materialTapTargetSize: tapTarget,
+                  visualDensity: chipDensity,
                   labelPadding: labelPadding,
                   selected: isActive,
                   onSelected: (_) => onChanged(i),
