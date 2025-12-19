@@ -17,7 +17,7 @@ final familySuggestionsProvider =
           }
         },
         loading: () {},
-        error: (_, __) {},
+        error: (err, st) {},
       );
       return result;
     });

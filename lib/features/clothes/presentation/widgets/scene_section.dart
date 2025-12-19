@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'choice_chip_row.dart';
-import 'scene_detail_card.dart';
-import 'layout_utils.dart';
-import '../../clothes/presentation/scene_clothes_provider.dart';
+import 'package:clothes_app/core/widgets/choice_chip_row.dart';
+import 'package:clothes_app/core/util/layout_utils.dart';
+import 'package:clothes_app/features/clothes/presentation/scene_clothes_provider.dart';
+import 'package:clothes_app/features/clothes/presentation/widgets/scene_detail_card.dart';
 
 class SceneSection extends StatelessWidget {
   final List<SceneClothes> sceneList;
@@ -29,7 +29,7 @@ class SceneSection extends StatelessWidget {
     // 端の余白を考慮し、最小/最大幅をクランプ（320〜1200）
     final double widthConstraint = screenWidth <= 0
         ? 480.0
-        : (screenWidth - 40.0).clamp(320.0, 1800.0);
+        : (screenWidth - 40.0).clamp(320.0, 1200.0);
     final scene = sceneList[selectedIndex];
 
     return Column(

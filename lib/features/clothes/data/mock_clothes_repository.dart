@@ -12,18 +12,18 @@ class MockClothesRepository implements ClothesRepository {
     return const ClothesSuggestion(
       userId: "test-user-3",
       ageGroup: "child",
-      temperature: TemperatureInfo(
+      temperature: const TemperatureInfo(
         value: 18.5,
         feelsLike: 17.8,
         category: "cool",
       ),
       summary: "薄手の長袖と軽めの羽織りがちょうど良い気温です。",
-      layers: ["長袖Tシャツ", "薄手パーカー", "ロングパンツ"],
-      notes: ["風が強い場合は薄手の羽織りを追加すると安心です"],
-      references: ["https://www.ncchd.go.jp/"],
+      layers: const ["長袖Tシャツ", "薄手パーカー", "ロングパンツ"],
+      notes: const ["風が強い場合は薄手の羽織りを追加すると安心です"],
+      references: const ["https://www.ncchd.go.jp/"],
 
       /// ⭐ モックの楽天商品リスト
-      products: [
+      products: const [
         RakutenProduct(
           name: "キッズ 長袖Tシャツ（男の子・女の子）",
           price: 1290,
@@ -50,6 +50,7 @@ class MockClothesRepository implements ClothesRepository {
   }
 
   /// 家族（ニックネーム）向けの今日の服装提案（モック）
+  @override
   Future<ClothesSuggestion> fetchFamilyTodayClothes(String nickname) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -69,14 +70,14 @@ class MockClothesRepository implements ClothesRepository {
         notes: const ['汗をかきやすい場合はインナー追加も可'],
         references: const ['https://www.ncchd.go.jp/'],
         products: const [
-          RakutenProduct(
+          const RakutenProduct(
             name: 'キッズ 半袖Tシャツ',
             price: 990,
             shop: 'KIDS BASIC',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example13.jpg',
           ),
-          RakutenProduct(
+          const RakutenProduct(
             name: 'キッズ 薄手パーカー（ライト）',
             price: 1890,
             shop: 'HAPPY KIDS MARKET',
@@ -90,17 +91,17 @@ class MockClothesRepository implements ClothesRepository {
       return ClothesSuggestion(
         userId: 'mock-dad',
         ageGroup: 'adult',
-        temperature: TemperatureInfo(
+        temperature: const TemperatureInfo(
           value: 18.0,
           feelsLike: 17.0,
           category: 'cool',
         ),
         summary: '薄手の長袖＋軽めのジャケットがおすすめ（パパ向け）',
-        layers: ['長袖シャツ', 'ライトジャケット', 'チノパン'],
+        layers: const ['長袖シャツ', 'ライトジャケット', 'チノパン'],
         notes: const ['朝晩は冷えるため羽織り推奨'],
         references: const ['https://www.ncchd.go.jp/'],
-        products: [
-          RakutenProduct(
+        products: const [
+          const RakutenProduct(
             name: 'メンズ ライトジャケット',
             price: 3990,
             shop: 'MEN STYLE',
@@ -117,17 +118,17 @@ class MockClothesRepository implements ClothesRepository {
       return ClothesSuggestion(
         userId: 'mock-daughter',
         ageGroup: 'child',
-        temperature: TemperatureInfo(
+        temperature: const TemperatureInfo(
           value: 19.0,
           feelsLike: 18.0,
           category: 'cool',
         ),
         summary: '薄手の長袖＋スカートorパンツの軽めコーデ（娘向け）',
-        layers: ['長袖Tシャツ', '薄手カーディガン', 'スカート'],
+        layers: const ['長袖Tシャツ', '薄手カーディガン', 'スカート'],
         notes: const ['外遊びが多い日はパンツに変更'],
         references: const ['https://www.ncchd.go.jp/'],
-        products: [
-          RakutenProduct(
+        products: const [
+          const RakutenProduct(
             name: 'キッズ カーディガン',
             price: 2190,
             shop: 'KIDS STYLE SHOP',
@@ -144,17 +145,17 @@ class MockClothesRepository implements ClothesRepository {
       return ClothesSuggestion(
         userId: 'mock-son',
         ageGroup: 'child',
-        temperature: TemperatureInfo(
+        temperature: const TemperatureInfo(
           value: 20.0,
           feelsLike: 19.0,
           category: 'cool',
         ),
         summary: '動きやすい薄手トップス＋パンツ（息子向け）',
-        layers: ['長袖Tシャツ', '薄手パーカー', 'ロングパンツ'],
+        layers: const ['長袖Tシャツ', '薄手パーカー', 'ロングパンツ'],
         notes: const ['汗対策にインナーを1枚追加も可'],
         references: const ['https://www.ncchd.go.jp/'],
-        products: [
-          RakutenProduct(
+        products: const [
+          const RakutenProduct(
             name: 'キッズ 薄手パーカー',
             price: 1990,
             shop: 'HAPPY KIDS MARKET',
@@ -169,17 +170,17 @@ class MockClothesRepository implements ClothesRepository {
     return ClothesSuggestion(
       userId: 'mock-self',
       ageGroup: 'adult',
-      temperature: TemperatureInfo(
+      temperature: const TemperatureInfo(
         value: 18.5,
         feelsLike: 17.8,
         category: 'cool',
       ),
       summary: '薄手の長袖と軽めの羽織りがちょうど良い（自分向け）',
-      layers: ['長袖Tシャツ', '薄手パーカー', 'ロングパンツ'],
+      layers: const ['長袖Tシャツ', '薄手パーカー', 'ロングパンツ'],
       notes: const ['風が強い日はジャケット追加'],
       references: const ['https://www.ncchd.go.jp/'],
-      products: [
-        RakutenProduct(
+      products: const [
+        const RakutenProduct(
           name: 'ユニセックス 長袖Tシャツ',
           price: 1290,
           shop: 'BASIC STORE',

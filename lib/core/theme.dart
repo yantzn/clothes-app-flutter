@@ -51,7 +51,6 @@ class AppTheme {
       primary: primaryBlue,
       secondary: lightBlue,
       surface: Colors.white,
-      background: surfaceLight,
     ),
 
     // ----------------------------------------
@@ -126,20 +125,20 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: primaryBlue, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: primaryBlue, width: 2),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       border: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
-      labelStyle: TextStyle(fontSize: 14),
+      labelStyle: const TextStyle(fontSize: 14),
     ),
 
     // ----------------------------------------
@@ -147,10 +146,12 @@ class AppTheme {
     // ----------------------------------------
     chipTheme: ChipThemeData(
       backgroundColor: chipBg,
-      selectedColor: primaryBlue.withOpacity(0.15),
+      selectedColor: primaryBlue.withValues(alpha: 0.15),
       labelStyle: const TextStyle(color: textDark, fontWeight: FontWeight.w600),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
       side: BorderSide.none,
     ),
 

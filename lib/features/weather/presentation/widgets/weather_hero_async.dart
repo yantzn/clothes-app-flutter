@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clothes_app/features/ui/components/hero/weather_hero.dart';
-import 'package:clothes_app/features/ui/components/cards/today_summary_card.dart';
+import 'package:clothes_app/features/weather/presentation/widgets/weather_hero.dart';
+import 'package:clothes_app/core/widgets/today_summary_card.dart';
+import 'package:clothes_app/features/weather/domain/entities/weather.dart';
+import 'package:clothes_app/features/clothes/domain/entities/clothes_suggestion.dart';
 
 class WeatherHeroAsync extends StatelessWidget {
-  final AsyncValue<dynamic> weatherAsync;
-  final AsyncValue<dynamic> clothesAsync;
+  final AsyncValue<TodayWeather> weatherAsync;
+  final AsyncValue<ClothesSuggestion> clothesAsync;
 
   const WeatherHeroAsync({
     super.key,
@@ -22,21 +24,21 @@ class WeatherHeroAsync extends StatelessWidget {
         // フッターは clothes の状態に応じて用意
         final Widget? footer = clothesAsync.when(
           data: (c) {
-            final summary = c.summary as String?;
-            if (summary == null || summary.isEmpty) return null;
+            final summary = c.summary;
+            if (summary.isEmpty) return null;
             return TodaySummaryCard(summary: summary);
           },
           loading: () => const SizedBox(
             height: 48,
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
-          error: (_, __) => ConstrainedBox(
+          error: (err, st) => ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -48,10 +50,10 @@ class WeatherHeroAsync extends StatelessWidget {
         );
 
         return WeatherHero(
-          condition: w.condition ?? '',
-          temperature: w.value ?? 0,
-          feelsLike: w.feelsLike ?? 0,
-          region: w.region ?? '',
+          condition: w.condition,
+          temperature: w.value,
+          feelsLike: w.feelsLike,
+          region: w.region,
           footer: footer,
         );
       },
@@ -61,7 +63,7 @@ class WeatherHeroAsync extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
         ),
       ),
-      error: (_, __) => Text(
+      error: (err, st) => Text(
         '天気を取得できません',
         style: textTheme.bodyMedium?.copyWith(color: Colors.white),
       ),

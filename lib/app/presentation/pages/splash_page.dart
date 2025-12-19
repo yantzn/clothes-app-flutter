@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../app/router.dart';
-import '../onboarding/presentation/onboarding_providers.dart';
+import 'package:clothes_app/app/router.dart';
+import 'package:clothes_app/features/onboarding/presentation/onboarding_providers.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -35,16 +35,16 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       // ===================================================
       //  初回アクセス → 利用規約へ
       // ===================================================
-      Navigator.pushReplacementNamed(context, AppRouter.terms);
+      await Navigator.pushReplacementNamed(context, AppRouter.terms);
       return;
     }
 
     // ===================================================
     //  2回目以降 → userId を Riverpod にセット → ホームへ
     // ===================================================
-    ref.read(userIdProvider.notifier).state = userId;
+    ref.read(userIdProvider.notifier).set(userId);
 
-    Navigator.pushReplacementNamed(context, AppRouter.home);
+    await Navigator.pushReplacementNamed(context, AppRouter.home);
   }
 
   @override

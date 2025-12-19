@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -194,7 +195,13 @@ class ConfirmRegisterPage extends ConsumerWidget {
     ref.read(userIdProvider.notifier).set(userId);
 
     if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRouter.home, (_) => false);
+      unawaited(
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.home,
+          (_) => false,
+        ),
+      );
     }
   }
 }

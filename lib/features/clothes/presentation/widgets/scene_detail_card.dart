@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme.dart';
+import 'package:clothes_app/core/theme.dart';
 
 class SceneDetailCard extends StatelessWidget {
   final String sceneName;
@@ -100,8 +100,8 @@ class SceneDetailCard extends StatelessWidget {
                           .map(
                             (i) => Chip(
                               label: Text(i),
-                              backgroundColor: AppTheme.primaryBlue.withOpacity(
-                                0.08,
+                              backgroundColor: AppTheme.primaryBlue.withValues(
+                                alpha: 0.08,
                               ),
                             ),
                           )

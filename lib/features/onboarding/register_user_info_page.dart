@@ -262,7 +262,7 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
                     // ---- 性別 ----
                     _label("性別"),
                     DropdownButtonFormField(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: _inputDecoration(""),
                       items: const [
                         DropdownMenuItem(value: "male", child: Text("男性")),

@@ -3,23 +3,19 @@ import 'package:clothes_app/features/clothes/presentation/scene_clothes_provider
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme.dart';
-import '../../app/router.dart';
+import 'package:clothes_app/app/router.dart';
 
 // ドメイン側プロバイダ
-import '../../features/weather/presentation/weather_providers.dart';
-import '../../features/clothes/presentation/clothes_providers.dart';
-import '../../features/clothes/presentation/family_scene_clothes_provider.dart';
+import 'package:clothes_app/features/weather/presentation/weather_providers.dart';
+import 'package:clothes_app/features/clothes/presentation/clothes_providers.dart';
+import 'package:clothes_app/features/clothes/presentation/family_scene_clothes_provider.dart';
 import 'package:clothes_app/features/clothes/presentation/mappers/family_scene_mapper.dart';
 
 // 共通コンポーネント
-// import 'components/custom_bottom_nav.dart'; // ボトムナビは撤去
-import 'components/section_header.dart';
-import 'components/weather_icon.dart';
-import 'components/scene_section.dart';
-// 共通コンポーネント
-import 'components/section_container.dart';
-import 'components/hero/weather_hero_async.dart';
+import 'package:clothes_app/core/widgets/section_header.dart';
+import 'package:clothes_app/core/widgets/section_container.dart';
+import 'package:clothes_app/features/clothes/presentation/widgets/scene_section.dart';
+import 'package:clothes_app/features/weather/presentation/widgets/weather_hero_async.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -120,16 +116,14 @@ class _FamilySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     if (familiesNicknames.isEmpty) {
       return SectionContainer(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
-            SizedBox(height: 12),
-            Text('家族情報が未登録です。プロフィールから追加してください。'),
+          children: [
+            const SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
+            const SizedBox(height: 12),
+            const Text('家族情報が未登録です。プロフィールから追加してください。'),
           ],
         ),
       );
@@ -161,28 +155,4 @@ class _FamilySection extends StatelessWidget {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// ローディング / エラー（既存）
-///////////////////////////////////////////////////////////////////////////////
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 80,
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-    );
-  }
-}
-
-class _ErrorMessage extends StatelessWidget {
-  final String message;
-  const _ErrorMessage(this.message);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(message, style: const TextStyle(color: Colors.red));
-  }
-}
+// （未使用のローディング/エラーカードは削除済み）

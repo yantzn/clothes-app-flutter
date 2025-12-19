@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../profile/domain/profile.dart';
-import '../profile/presentation/profile_providers.dart';
+import 'package:clothes_app/features/profile/domain/profile.dart';
+import 'package:clothes_app/features/profile/presentation/profile_providers.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
   const ProfileEditPage({super.key});

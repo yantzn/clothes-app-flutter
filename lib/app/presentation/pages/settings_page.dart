@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../app/router.dart';
+import 'package:clothes_app/app/router.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

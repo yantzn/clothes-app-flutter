@@ -79,7 +79,7 @@ class RegisterFamilyPage extends ConsumerWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: AppTheme.lightBlue.withOpacity(0.3),
+          backgroundColor: AppTheme.lightBlue.withValues(alpha: 0.3),
           child: Text(
             f.name.isNotEmpty ? f.name[0] : "?",
             style: const TextStyle(
@@ -119,12 +119,12 @@ class RegisterFamilyPage extends ConsumerWidget {
   // =================================================================
   Widget _emptyCard() {
     return Card(
-      child: SizedBox(
+      child: const SizedBox(
         height: 160,
-        child: Center(
+        child: const Center(
           child: Text(
             "登録された家族はいません",
-            style: const TextStyle(fontSize: 15, color: AppTheme.textLight),
+            style: TextStyle(fontSize: 15, color: AppTheme.textLight),
           ),
         ),
       ),
@@ -265,7 +265,7 @@ class RegisterFamilyPage extends ConsumerWidget {
                             const SizedBox(height: 16),
 
                             DropdownButtonFormField<String>(
-                              value: gender,
+                              initialValue: gender,
                               decoration: const InputDecoration(
                                 labelText: "性別",
                               ),

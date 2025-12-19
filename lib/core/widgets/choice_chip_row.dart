@@ -79,7 +79,7 @@ class ChoiceChipRow extends StatelessWidget {
                   onSelected: (_) => onChanged(i),
                   selectedColor: Theme.of(
                     context,
-                  ).primaryColor.withOpacity(0.15),
+                  ).primaryColor.withValues(alpha: 0.15),
                 ),
               );
             }),

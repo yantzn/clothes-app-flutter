@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:clothes_app/features/ui/components/weather_icon.dart';
+import 'package:clothes_app/features/weather/presentation/widgets/weather_icon.dart';
 
 class WeatherHero extends StatelessWidget {
   final String condition;
@@ -75,7 +75,7 @@ class WeatherHero extends StatelessWidget {
           Text(
             '体感 ${feelsLike.toStringAsFixed(0)}°',
             style: textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),

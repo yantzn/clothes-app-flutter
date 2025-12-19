@@ -1,6 +1,7 @@
 // lib/features/onboarding/data/mock_onboarding_repository.dart
 
 import 'dart:math';
+import 'dart:developer' as dev;
 
 import '../domain/entities/register_request.dart';
 import '../domain/repositories/onboarding_repository.dart';
@@ -13,9 +14,11 @@ class MockOnboardingRepository implements OnboardingRepository {
     await Future.delayed(const Duration(milliseconds: 800));
 
     // デバッグログ（本番では削除）
-    // ignore: avoid_print
-    print("Mock registerUser() called with:");
-    print(request.toJson());
+    dev.log(
+      'Mock registerUser() called',
+      name: 'MockOnboardingRepository',
+      error: request.toJson(),
+    );
 
     // userId をランダムで生成
     final randomId = Random().nextInt(999999).toString().padLeft(6, "0");

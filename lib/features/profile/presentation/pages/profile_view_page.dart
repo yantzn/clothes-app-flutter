@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../app/router.dart';
-import '../profile/presentation/profile_providers.dart';
+import 'package:clothes_app/app/router.dart';
+import 'package:clothes_app/features/profile/presentation/profile_providers.dart';
+import 'package:clothes_app/features/profile/domain/profile.dart';
 
 class ProfileViewPage extends ConsumerWidget {
   const ProfileViewPage({super.key});
@@ -53,7 +54,7 @@ class ProfileViewPage extends ConsumerWidget {
 // プロフィール情報カード（白カード + 薄境界 + 丸み）
 // ================================
 class _ProfileCard extends StatelessWidget {
-  final dynamic p;
+  final UserProfile p;
 
   const _ProfileCard({required this.p});
 

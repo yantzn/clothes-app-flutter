@@ -18,7 +18,7 @@ class TodaySummaryCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.96),
+          color: Colors.white.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(

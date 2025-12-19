@@ -4,7 +4,7 @@ import 'package:geocoding/geocoding.dart';
 class LocationService {
   /// 現在地の座標取得
   static Future<Position> getPosition() async {
-    bool enabled = await Geolocator.isLocationServiceEnabled();
+    final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
       await Geolocator.openLocationSettings();
       throw Exception("位置情報サービスが無効です");
