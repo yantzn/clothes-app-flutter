@@ -13,6 +13,9 @@ class ProductCard extends StatelessWidget {
     final double cardWidth = screenWidth >= 768
         ? 220
         : (screenWidth >= 480 ? 180 : 160);
+    // リストの高さに収めるため、画像高さとパディングを控えめに
+    final bool isSmall = screenWidth < 360;
+    final double imageHeight = isSmall ? 92 : 96;
     final imageUrl = product.imageUrl ?? '';
     final name = product.name ?? '';
     final price = product.price ?? '';
@@ -43,18 +46,18 @@ class ProductCard extends StatelessWidget {
             child: imageUrl.isNotEmpty
                 ? Image.network(
                     imageUrl,
-                    height: 100,
+                    height: imageHeight,
                     width: cardWidth,
                     fit: BoxFit.cover,
                   )
                 : Container(
-                    height: 100,
+                    height: imageHeight,
                     color: Colors.grey[200],
                     child: const Icon(Icons.image_not_supported),
                   ),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

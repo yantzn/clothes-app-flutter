@@ -30,7 +30,6 @@ class MockClothesRepository implements ClothesRepository {
           shop: "子ども服のABC",
           imageUrl:
               "https://thumbnail.image.rakuten.co.jp/@0_mall/example01.jpg",
-          url: "https://item.rakuten.co.jp/example01",
         ),
         RakutenProduct(
           name: "薄手パーカー（春・秋用）",
@@ -38,7 +37,6 @@ class MockClothesRepository implements ClothesRepository {
           shop: "KIDS STYLE SHOP",
           imageUrl:
               "https://thumbnail.image.rakuten.co.jp/@0_mall/example02.jpg",
-          url: "https://item.rakuten.co.jp/example02",
         ),
         RakutenProduct(
           name: "キッズ ロングパンツ 110cm〜130cm",
@@ -46,7 +44,6 @@ class MockClothesRepository implements ClothesRepository {
           shop: "HAPPY KIDS MARKET",
           imageUrl:
               "https://thumbnail.image.rakuten.co.jp/@0_mall/example03.jpg",
-          url: "https://item.rakuten.co.jp/example03",
         ),
       ],
     );
@@ -78,7 +75,6 @@ class MockClothesRepository implements ClothesRepository {
             shop: 'KIDS BASIC',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example13.jpg',
-            url: 'https://item.rakuten.co.jp/example13',
           ),
           RakutenProduct(
             name: 'キッズ 薄手パーカー（ライト）',
@@ -86,7 +82,6 @@ class MockClothesRepository implements ClothesRepository {
             shop: 'HAPPY KIDS MARKET',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example14.jpg',
-            url: 'https://item.rakuten.co.jp/example14',
           ),
         ],
       );
@@ -111,7 +106,6 @@ class MockClothesRepository implements ClothesRepository {
             shop: 'MEN STYLE',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example10.jpg',
-            url: 'https://item.rakuten.co.jp/example10',
           ),
         ],
       );
@@ -139,7 +133,6 @@ class MockClothesRepository implements ClothesRepository {
             shop: 'KIDS STYLE SHOP',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example11.jpg',
-            url: 'https://item.rakuten.co.jp/example11',
           ),
         ],
       );
@@ -167,7 +160,6 @@ class MockClothesRepository implements ClothesRepository {
             shop: 'HAPPY KIDS MARKET',
             imageUrl:
                 'https://thumbnail.image.rakuten.co.jp/@0_mall/example12.jpg',
-            url: 'https://item.rakuten.co.jp/example12',
           ),
         ],
       );
@@ -193,7 +185,6 @@ class MockClothesRepository implements ClothesRepository {
           shop: 'BASIC STORE',
           imageUrl:
               'https://thumbnail.image.rakuten.co.jp/@0_mall/example01.jpg',
-          url: 'https://item.rakuten.co.jp/example01',
         ),
       ],
     );

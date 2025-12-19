@@ -18,7 +18,7 @@ class CustomBottomNav extends StatelessWidget {
 
     final items = [
       const _NavItemData(icon: Icons.home_outlined, label: "服装"),
-      const _NavItemData(icon: Icons.checkroom_outlined, label: "おすすめ"),
+      const _NavItemData(icon: Icons.apps, label: "アイテム"),
       const _NavItemData(icon: Icons.settings_outlined, label: "設定"),
     ];
 

@@ -15,7 +15,6 @@ import '../../features/clothes/presentation/family_scene_clothes_provider.dart';
 import 'components/custom_bottom_nav.dart';
 import 'components/section_header.dart';
 import 'components/weather_icon.dart';
-import 'components/product_card.dart';
 import 'components/scene_section.dart';
 import 'components/bottom_sheets/animated_clothes_bottom_sheet.dart';
 import 'package:clothes_app/features/clothes/presentation/mappers/family_scene_mapper.dart';
@@ -56,8 +55,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           onTap: (index) {
             setState(() => _currentIndex = index);
             switch (index) {
-              case 1:
-                break;
               case 2:
                 Navigator.pushNamed(context, AppRouter.settings);
                 break;
@@ -86,13 +83,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
 
                 ////////////////////////////////////////////////////////////
-                // ② 今日の服装ナビ
-                ////////////////////////////////////////////////////////////
-                /*
-                _MainClothesSection(clothesAsync: clothesAsync),
-                */
-
-                ////////////////////////////////////////////////////////////
                 // ③ 家族別の服装提案（タブはニックネーム）
                 ////////////////////////////////////////////////////////////
                 Builder(
@@ -113,11 +103,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     );
                   },
                 ),
-
-                ////////////////////////////////////////////////////////////
-                // ④ 楽天おすすめ
-                ////////////////////////////////////////////////////////////
-                _ProductsSection(clothesAsync: clothesAsync),
               ],
             ),
           ),
@@ -264,61 +249,7 @@ class _FamilySection extends StatelessWidget {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// ④ 楽天おすすめ（既存）
-///////////////////////////////////////////////////////////////////////////////
-
-class _ProductsSection extends StatelessWidget {
-  final AsyncValue<dynamic> clothesAsync;
-
-  const _ProductsSection({required this.clothesAsync});
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return SectionContainer(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(
-            icon: Icons.shopping_bag_outlined,
-            title: '今日のお天気アイテム',
-          ),
-          const SizedBox(height: 12),
-
-          clothesAsync.when(
-            data: (c) {
-              final products = c.products as List<dynamic>? ?? [];
-
-              if (products.isEmpty) {
-                return const Text('おすすめ商品はありません');
-              }
-
-              final bool isSmall = screenWidth < 360;
-              return SizedBox(
-                height: isSmall ? 170 : 200,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  // 大画面専用の余白拡張は削除
-                  itemCount: products.length,
-                  separatorBuilder: (_, __) =>
-                      SizedBox(width: isSmall ? 8 : 12),
-                  itemBuilder: (context, index) {
-                    final p = products[index];
-                    return ProductCard(product: p);
-                  },
-                ),
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (_, __) => const Text('商品情報を取得できませんでした'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ④ アイテムセクション（楽天）は削除済み
 
 // ProductCard は components/product_card.dart を使用
 

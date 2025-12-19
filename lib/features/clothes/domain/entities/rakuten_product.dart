@@ -22,15 +22,11 @@ class RakutenProduct {
   /// 商品画像 URL
   final String imageUrl;
 
-  /// 商品ページ URL
-  final String url;
-
   const RakutenProduct({
     required this.name,
     required this.price,
     required this.shop,
     required this.imageUrl,
-    required this.url,
   });
 
   /// API → モデル
@@ -40,19 +36,12 @@ class RakutenProduct {
       price: _parsePrice(json['price']),
       shop: json['shop']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString() ?? '',
-      url: json['url']?.toString() ?? '',
     );
   }
 
   /// モデル → JSON
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'price': price,
-      'shop': shop,
-      'imageUrl': imageUrl,
-      'url': url,
-    };
+    return {'name': name, 'price': price, 'shop': shop, 'imageUrl': imageUrl};
   }
 
   /// 価格が文字列 or 数値のどちらでも受け入れるようにする
@@ -73,14 +62,12 @@ class RakutenProduct {
     int? price,
     String? shop,
     String? imageUrl,
-    String? url,
   }) {
     return RakutenProduct(
       name: name ?? this.name,
       price: price ?? this.price,
       shop: shop ?? this.shop,
       imageUrl: imageUrl ?? this.imageUrl,
-      url: url ?? this.url,
     );
   }
 }

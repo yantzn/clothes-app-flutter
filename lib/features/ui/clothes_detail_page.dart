@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme.dart';
 import '../../features/clothes/presentation/clothes_providers.dart';
@@ -94,124 +93,6 @@ class ClothesDetailPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // ---------------------------------------------------------
-            // 📌 参考リンク（カードUIに統一）
-            // ---------------------------------------------------------
-            if (c.references.isNotEmpty) ...[
-              const SectionHeader(icon: Icons.link_outlined, title: '参考リンク'),
-              const SizedBox(height: 12),
-              ...c.references.map(
-                (url) => Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      url,
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    onTap: () async {
-                      final uri = Uri.parse(url);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-
-            // ---------------------------------------------------------
-            // 📌 楽天商品
-            // ---------------------------------------------------------
-            const SectionHeader(
-              icon: Icons.shopping_bag_outlined,
-              title: '楽天の商品',
-            ),
-            const SizedBox(height: 12),
-
-            ...c.products.map(
-              (p) => Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: InkWell(
-                  onTap: () async {
-                    final uri = Uri.parse(p.url);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: p.imageUrl,
-                            width: 70,
-                            height: 70,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.image_not_supported, size: 40),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-
-                        // 商品名・店名・価格
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                p.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                p.shop,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${p.price} 円',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryBlue,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
