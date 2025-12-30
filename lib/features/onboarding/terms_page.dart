@@ -15,6 +15,7 @@ class TermsPage extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7FAFD),
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: const Text(
           "利用規約",
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -50,7 +51,10 @@ class TermsPage extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // 同意しない → スプラッシュへ戻す
+                  Navigator.pushReplacementNamed(context, AppRouter.splash);
+                },
                 child: const Text("同意しない"),
               ),
             ),

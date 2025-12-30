@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
@@ -244,18 +245,103 @@ class RegisterFamilyPage extends ConsumerWidget {
                                 suffixIcon: IconButton(
                                   icon: const Icon(Icons.calendar_month),
                                   onPressed: () async {
+                                    // キーボードを閉じて視認性を確保
+                                    FocusScope.of(context).unfocus();
+
                                     final now = DateTime.now();
-                                    final picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: now,
-                                      firstDate: DateTime(1900),
-                                      lastDate: now,
-                                    );
-                                    if (picked != null) {
-                                      birthdayCtrl.text =
-                                          "${picked.year}/${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}";
-                                      validate();
+                                    // 現在のテキストから初期値を推定
+                                    DateTime initial = DateTime(2010, 1, 1);
+                                    final reg = RegExp(r'^\d{4}/\d{2}/\d{2}$');
+                                    if (reg.hasMatch(birthdayCtrl.text)) {
+                                      try {
+                                        final parts = birthdayCtrl.text.split(
+                                          '/',
+                                        );
+                                        initial = DateTime(
+                                          int.parse(parts[0]),
+                                          int.parse(parts[1]),
+                                          int.parse(parts[2]),
+                                        );
+                                      } catch (_) {}
                                     }
+
+                                    DateTime selected = initial;
+
+                                    await showModalBottomSheet<void>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.white,
+                                      builder: (ctx) {
+                                        return SafeArea(
+                                          child: SizedBox(
+                                            height: 320,
+                                            child: Column(
+                                              children: [
+                                                // ヘッダー（キャンセル／完了）
+                                                SizedBox(
+                                                  height: 48,
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(ctx),
+                                                        child: const Text(
+                                                          "キャンセル",
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          final formatted =
+                                                              "${selected.year.toString().padLeft(4, '0')}/"
+                                                              "${selected.month.toString().padLeft(2, '0')}/"
+                                                              "${selected.day.toString().padLeft(2, '0')}";
+                                                          birthdayCtrl.text =
+                                                              formatted;
+                                                          validate();
+                                                          Navigator.pop(ctx);
+                                                        },
+                                                        child: const Text("完了"),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const Divider(height: 1),
+                                                Expanded(
+                                                  child: CupertinoTheme(
+                                                    data:
+                                                        const CupertinoThemeData(
+                                                          brightness:
+                                                              Brightness.light,
+                                                        ),
+                                                    child: CupertinoDatePicker(
+                                                      mode:
+                                                          CupertinoDatePickerMode
+                                                              .date,
+                                                      initialDateTime: initial,
+                                                      minimumDate: DateTime(
+                                                        1900,
+                                                      ),
+                                                      maximumDate: DateTime(
+                                                        now.year,
+                                                        now.month,
+                                                        now.day,
+                                                      ),
+                                                      onDateTimeChanged:
+                                                          (DateTime d) {
+                                                            selected = d;
+                                                          },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
                                   },
                                 ),
                               ),

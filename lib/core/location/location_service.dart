@@ -40,4 +40,9 @@ class LocationService {
     final pos = await getPosition();
     return toCity(pos.latitude, pos.longitude);
   }
+
+  /// 位置情報の設定画面を開く（権限付与やサービス有効化を促すため）
+  static Future<void> openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
 }

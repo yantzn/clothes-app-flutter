@@ -53,32 +53,47 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         elevation: 0,
         backgroundColor: const Color(0xFFF7FAFD),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // ---- 入力フォームを白カードにまとめる ----
-            _ProfileFormCard(
-              regionController: _regionController,
-              birthdayController: _birthdayController,
-              gender: _gender,
-              onGenderChanged: (v) => setState(() => _gender = v),
-              notificationsEnabled: _notificationsEnabled,
-              onNotificationChanged: (v) =>
-                  setState(() => _notificationsEnabled = v),
-            ),
-
-            const Spacer(),
-
-            // ---- 保存ボタン ----
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _save,
-                child: const Text('保存する'),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      // ---- 入力フォームを白カードにまとめる ----
+                      _ProfileFormCard(
+                        regionController: _regionController,
+                        birthdayController: _birthdayController,
+                        gender: _gender,
+                        onGenderChanged: (v) => setState(() => _gender = v),
+                        notificationsEnabled: _notificationsEnabled,
+                        onNotificationChanged: (v) =>
+                            setState(() => _notificationsEnabled = v),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            16 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(onPressed: _save, child: const Text('保存する')),
+          ),
         ),
       ),
     );

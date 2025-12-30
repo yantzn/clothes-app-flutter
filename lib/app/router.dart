@@ -6,10 +6,10 @@ import '../features/onboarding/register_user_info_page.dart';
 import '../features/onboarding/register_family_page.dart';
 import '../features/onboarding/confirm_register_page.dart';
 
-// ---- Main UI ----
-import 'presentation/pages/splash_page.dart';
-import 'presentation/pages/home_page.dart';
-import 'presentation/pages/settings_page.dart';
+// ---- Main UI (current structure)
+import '../features/splash/splash_page.dart';
+import '../features/home/home_page.dart';
+import '../features/settings/settings_page.dart';
 import '../features/profile/presentation/pages/profile_view_page.dart';
 import '../features/profile/presentation/pages/profile_edit_page.dart';
 

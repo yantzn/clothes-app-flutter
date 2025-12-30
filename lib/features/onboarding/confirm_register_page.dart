@@ -33,7 +33,7 @@ class ConfirmRegisterPage extends ConsumerWidget {
                     _infoItem("ニックネーム", state.nickname),
                     _infoItem("地域", state.region),
                     _infoItem("生年月日", state.birthday),
-                    _infoItem("性別", state.gender),
+                    _infoItem("性別", _genderLabel(state.gender)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -76,8 +76,13 @@ class ConfirmRegisterPage extends ConsumerWidget {
       ),
 
       bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            16 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -88,6 +93,22 @@ class ConfirmRegisterPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  // ------------------------------------------------------------
+  // ■ 性別コード → 日本語ラベル
+  // ------------------------------------------------------------
+  String _genderLabel(String code) {
+    switch (code) {
+      case 'male':
+        return '男性';
+      case 'female':
+        return '女性';
+      case 'other':
+        return 'その他';
+      default:
+        return code; // 想定外はそのまま表示
+    }
   }
 
   // ------------------------------------------------------------

@@ -10,6 +10,7 @@ import 'package:clothes_app/features/weather/presentation/weather_providers.dart
 import 'package:clothes_app/features/clothes/presentation/clothes_providers.dart';
 import 'package:clothes_app/features/clothes/presentation/family_scene_clothes_provider.dart';
 import 'package:clothes_app/features/clothes/presentation/mappers/family_scene_mapper.dart';
+import 'package:clothes_app/features/onboarding/presentation/onboarding_providers.dart';
 
 // 共通コンポーネント
 import 'package:clothes_app/core/widgets/section_header.dart';
@@ -28,6 +29,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _selectedFamilyIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // ガード: userId 未設定なら Onboarding（利用規約）へ誘導
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = ref.read(userIdProvider);
+      if (userId == null && mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.terms);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final weatherAsync = ref.watch(todayWeatherProvider);
     final clothesAsync = ref.watch(todayClothesProvider);
@@ -43,7 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         actions: [
           IconButton(
             tooltip: '設定',
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () => Navigator.pushNamed(context, AppRouter.settings),
           ),
         ],

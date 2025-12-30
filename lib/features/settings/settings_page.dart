@@ -7,7 +7,17 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('設定')),
+      appBar: AppBar(
+        title: const Text('設定'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            tooltip: '閉じる',
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

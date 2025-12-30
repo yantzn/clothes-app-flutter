@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
 import '../../core/location/location_service.dart';
+import '../../core/theme.dart';
 import 'presentation/onboarding_providers.dart';
 
 class RegisterUserInfoPage extends ConsumerStatefulWidget {
@@ -20,6 +22,9 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
 
   String _gender = "male";
   bool _loadingLocation = false;
+
+  // 位置情報取得エラー表示用
+  bool _permissionDenied = false;
 
   // ---- バリデーションエラー ----
   String? _nicknameError;
@@ -44,20 +49,15 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
       text:
           "${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}",
     );
+
+    // 画面表示後に位置情報の許可・取得を促す（初回のみ）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setRegionFromGPS();
+    });
   }
 
-  @override
-  void dispose() {
-    _nickname.dispose();
-    _region.dispose();
-    _birthday.dispose();
-    super.dispose();
-  }
-
-  // ---- 全体バリデーション ----
   void _validate() {
     setState(() {
-      // ニックネーム：必須 & 30文字以内
       if (_nickname.text.isEmpty) {
         _nicknameError = "ニックネームを入力してください";
       } else if (_nickname.text.length > 30) {
@@ -66,14 +66,8 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
         _nicknameError = null;
       }
 
-      // 地域：必須 & 20文字以内
-      if (_region.text.isEmpty) {
-        _regionError = "お住まいの地域を入力してください";
-      } else if (_region.text.length > 20) {
-        _regionError = "お住まいの地域は20文字以内で入力してください";
-      } else {
-        _regionError = null;
-      }
+      // 地域：UIのエラーメッセージは表示しない。空判定のみでボタン制御。
+      _regionError = null;
 
       // 生年月日：ルールは別関数で
       _birthdayError = _validateBirthday(_birthday.text);
@@ -90,22 +84,26 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
     }
 
     try {
-      final year = int.parse(text.substring(0, 4));
-      final month = int.parse(text.substring(5, 7));
-      final day = int.parse(text.substring(8, 10));
+      final parts = text.split('/');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+
+      if (year < 1900) {
+        return "1900年以降の日付を入力してください";
+      }
+
+      final now = DateTime.now();
       final date = DateTime(year, month, day);
 
-      // 存在しない日付
+      // 存在しない日付を弾く（例: 2024/02/30）
       if (date.year != year || date.month != month || date.day != day) {
         return "存在しない日付です";
       }
 
-      if (date.isAfter(DateTime.now())) {
-        return "未来の日付は指定できません";
-      }
-
-      if (year < 1900) {
-        return "1900年以降の日付を入力してください";
+      // 未来日を弾く
+      if (date.isAfter(DateTime(now.year, now.month, now.day))) {
+        return "未来の日付は入力できません";
       }
     } catch (_) {
       return "日付の形式が不正です";
@@ -116,28 +114,86 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
 
   // ---- カレンダーで日付選択 ----
   Future<void> _pickDate() async {
+    // キーボードが開いている場合は閉じる
+    FocusScope.of(context).unfocus();
+
     final now = DateTime.now();
+    // 現在のテキストから初期値を決定（不正ならデフォルト）
+    DateTime initial = DateTime(2010, 1, 1);
+    final reg = RegExp(r'^\d{4}/\d{2}/\d{2}$');
+    if (reg.hasMatch(_birthday.text)) {
+      try {
+        final parts = _birthday.text.split('/');
+        initial = DateTime(
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+          int.parse(parts[2]),
+        );
+      } catch (_) {}
+    }
 
-    final DateTime? date = await showDatePicker(
+    DateTime selected = initial;
+
+    await showModalBottomSheet<void>(
       context: context,
-      initialDate: DateTime(2010, 1, 1),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(now.year, now.month, now.day),
-      helpText: "生年月日を選択",
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                // ヘッダー（キャンセル／完了）
+                SizedBox(
+                  height: 48,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text("キャンセル"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final formatted =
+                              "${selected.year.toString().padLeft(4, '0')}/"
+                              "${selected.month.toString().padLeft(2, '0')}/"
+                              "${selected.day.toString().padLeft(2, '0')}";
+                          setState(() {
+                            _birthday.text = formatted;
+                          });
+                          _validate();
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text("完了"),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: CupertinoTheme(
+                    data: const CupertinoThemeData(
+                      brightness: Brightness.light,
+                    ),
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.date,
+                      initialDateTime: initial,
+                      minimumDate: DateTime(1900),
+                      maximumDate: DateTime(now.year, now.month, now.day),
+                      onDateTimeChanged: (DateTime d) {
+                        selected = d;
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-
-    if (date == null) return;
-
-    final formatted =
-        "${date.year.toString().padLeft(4, '0')}/"
-        "${date.month.toString().padLeft(2, '0')}/"
-        "${date.day.toString().padLeft(2, '0')}";
-
-    setState(() {
-      _birthday.text = formatted;
-    });
-
-    _validate();
   }
 
   // ---- GPSから地域取得 ----
@@ -146,17 +202,47 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
 
     try {
       final city = await LocationService.getCurrentCity();
-      setState(() => _region.text = city);
+      setState(() {
+        _region.text = city;
+        _permissionDenied = false;
+      });
     } catch (e) {
+      final msg = e.toString();
+      String err;
+      if (msg.contains("恒久的に拒否")) {
+        err = "位置情報が恒久的に拒否されています。設定から許可してください";
+      } else if (msg.contains("許可が必要")) {
+        err = "位置情報が許可されていません。許可後に再取得してください";
+      } else if (msg.contains("無効")) {
+        err = "位置情報サービスが無効です。設定から有効化してください";
+      } else {
+        err = "取得できませんでした。再取得をお試しください";
+      }
+
+      setState(() {
+        _permissionDenied = msg.contains("恒久的に拒否") || msg.contains("許可が必要");
+      });
+      // 控えめな通知（赤い固定バナーは使わない）
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("位置情報取得に失敗：$e")));
+        _showInfoSnack(err);
       }
     } finally {
       if (mounted) setState(() => _loadingLocation = false);
     }
     _validate();
+  }
+
+  void _showInfoSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        backgroundColor: AppTheme.primaryBlue,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+    );
   }
 
   // ---- 次へ ----
@@ -177,115 +263,191 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isButtonEnabled = isValid;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFD),
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
         backgroundColor: const Color(0xFFF7FAFD),
-        elevation: 0,
-        title: const Text("ユーザ基本情報"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: const BorderSide(color: Color(0xFFE7EDF3)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // ---- ニックネーム ----
-                    _label("ニックネーム（30文字以内）"),
-                    TextField(
-                      controller: _nickname,
-                      decoration: _inputDecoration(
-                        "例：たろう",
-                      ).copyWith(errorText: _nicknameError),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ---- 地域 ----
-                    _label("お住まいの地域（20文字以内）"),
-                    Row(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF7FAFD),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          title: const Text("プロフィール"),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              children: [
+                Card(
+                  elevation: 0,
+                  surfaceTintColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: const BorderSide(color: Color(0xFFE7EDF3)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _region,
-                            decoration: _inputDecoration(
-                              "例：船橋市",
-                            ).copyWith(errorText: _regionError),
-                          ),
+                        // ---- ニックネーム ----
+                        _label("ニックネーム（30文字以内）"),
+                        TextField(
+                          controller: _nickname,
+                          decoration: _inputDecoration(
+                            "例：たろう",
+                          ).copyWith(errorText: _nicknameError),
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: _loadingLocation
-                              ? const SizedBox(
+                        const SizedBox(height: 20),
+
+                        // ---- 地域（TextField以外の表示）----
+                        _label("お住まいの地域（位置情報から取得）"),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE0E6EC)),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                color: Color(0xFF6DB4F5),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _region.text.isEmpty
+                                      ? "現在地から市区町村を取得します"
+                                      : _region.text,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: _region.text.isEmpty
+                                        ? const Color(0xFF8A8A8A)
+                                        : const Color(0xFF222222),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (_loadingLocation)
+                                const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.my_location),
-                          onPressed: _loadingLocation
-                              ? null
-                              : _setRegionFromGPS,
+                              else
+                                IconButton(
+                                  tooltip: _permissionDenied
+                                      ? "位置情報の設定を開く"
+                                      : "現在地を再取得",
+                                  icon: Icon(
+                                    _permissionDenied
+                                        ? Icons.location_disabled
+                                        : Icons.my_location,
+                                  ),
+                                  onPressed: () async {
+                                    // キーボードが開いている場合は閉じてトーストが見えるようにする
+                                    FocusScope.of(context).unfocus();
+                                    if (_permissionDenied) {
+                                      _showInfoSnack(
+                                        "位置情報が許可されていません。許可後に再取得してください",
+                                      );
+                                      await LocationService.openLocationSettings();
+                                    } else {
+                                      await _setRegionFromGPS();
+                                    }
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (_permissionDenied) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton(
+                              onPressed: () async {
+                                await LocationService.openLocationSettings();
+                              },
+                              child: const Text("位置情報の設定を開く"),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+
+                        // ---- 生年月日 ----
+                        _label("生年月日 (YYYY/MM/DD)"),
+                        TextField(
+                          controller: _birthday,
+                          // 手入力も可能
+                          readOnly: false,
+                          keyboardType: TextInputType.datetime,
+                          decoration: _inputDecoration("例：2010/04/21").copyWith(
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.calendar_month),
+                              onPressed: _pickDate,
+                            ),
+                            errorText: _birthdayError,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ---- 性別 ----
+                        _label("性別"),
+                        DropdownButtonFormField<String>(
+                          initialValue: _gender,
+                          decoration: _inputDecoration(""),
+                          items: const [
+                            DropdownMenuItem<String>(
+                              value: "male",
+                              child: Text("男性"),
+                            ),
+                            DropdownMenuItem<String>(
+                              value: "female",
+                              child: Text("女性"),
+                            ),
+                            DropdownMenuItem<String>(
+                              value: "other",
+                              child: Text("その他"),
+                            ),
+                          ],
+                          onChanged: (String? v) =>
+                              setState(() => _gender = v ?? "male"),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // ---- 生年月日 ----
-                    _label("生年月日 (YYYY/MM/DD)"),
-                    TextField(
-                      controller: _birthday,
-                      // 手入力も可能
-                      readOnly: false,
-                      keyboardType: TextInputType.datetime,
-                      decoration: _inputDecoration("例：2010/04/21").copyWith(
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.calendar_month),
-                          onPressed: _pickDate,
-                        ),
-                        errorText: _birthdayError,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ---- 性別 ----
-                    _label("性別"),
-                    DropdownButtonFormField(
-                      initialValue: _gender,
-                      decoration: _inputDecoration(""),
-                      items: const [
-                        DropdownMenuItem(value: "male", child: Text("男性")),
-                        DropdownMenuItem(value: "female", child: Text("女性")),
-                        DropdownMenuItem(value: "other", child: Text("その他")),
-                      ],
-                      onChanged: (v) => setState(() => _gender = v ?? "male"),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-
-            const Spacer(),
-
-            SizedBox(
+          ),
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              16 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isButtonEnabled ? _next : null,
+                onPressed: isValid ? _next : null,
                 child: const Text("次へ"),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
