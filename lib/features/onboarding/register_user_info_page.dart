@@ -6,6 +6,8 @@ import '../../app/router.dart';
 import '../../core/location/location_service.dart';
 import '../../core/theme.dart';
 import 'presentation/onboarding_providers.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/date_picker_sheet.dart';
 
 class RegisterUserInfoPage extends ConsumerStatefulWidget {
   const RegisterUserInfoPage({super.key});
@@ -132,68 +134,22 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
       } catch (_) {}
     }
 
-    DateTime selected = initial;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (ctx) {
-        return SafeArea(
-          child: SizedBox(
-            height: 320,
-            child: Column(
-              children: [
-                // ヘッダー（キャンセル／完了）
-                SizedBox(
-                  height: 48,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text("キャンセル"),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final formatted =
-                              "${selected.year.toString().padLeft(4, '0')}/"
-                              "${selected.month.toString().padLeft(2, '0')}/"
-                              "${selected.day.toString().padLeft(2, '0')}";
-                          setState(() {
-                            _birthday.text = formatted;
-                          });
-                          _validate();
-                          Navigator.pop(ctx);
-                        },
-                        child: const Text("完了"),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: CupertinoTheme(
-                    data: const CupertinoThemeData(
-                      brightness: Brightness.light,
-                    ),
-                    child: CupertinoDatePicker(
-                      mode: CupertinoDatePickerMode.date,
-                      initialDateTime: initial,
-                      minimumDate: DateTime(1900),
-                      maximumDate: DateTime(now.year, now.month, now.day),
-                      onDateTimeChanged: (DateTime d) {
-                        selected = d;
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    final picked = await showDatePickerSheet(
+      context,
+      initial: initial,
+      minimumDate: DateTime(1900),
+      maximumDate: DateTime(now.year, now.month, now.day),
     );
+    if (picked != null) {
+      final formatted =
+          "${picked.year.toString().padLeft(4, '0')}/"
+          "${picked.month.toString().padLeft(2, '0')}/"
+          "${picked.day.toString().padLeft(2, '0')}";
+      setState(() {
+        _birthday.text = formatted;
+      });
+      _validate();
+    }
   }
 
   // ---- GPSから地域取得 ----
@@ -232,18 +188,7 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
     _validate();
   }
 
-  void _showInfoSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        backgroundColor: AppTheme.primaryBlue,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-    );
-  }
+  void _showInfoSnack(String message) => AppSnackBar.show(context, message);
 
   // ---- 次へ ----
   void _next() {

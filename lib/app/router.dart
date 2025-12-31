@@ -12,6 +12,7 @@ import '../features/home/home_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/profile/presentation/pages/profile_view_page.dart';
 import '../features/profile/presentation/pages/profile_edit_page.dart';
+import '../features/profile/presentation/pages/family_edit_page.dart';
 
 class AppRouter {
   // ---- 初期表示 ----
@@ -31,6 +32,7 @@ class AppRouter {
   // ---- プロフィール ----
   static const profileView = '/profile/view';
   static const profileEdit = '/profile/edit';
+  static const profileFamilyEdit = '/profile/family/edit';
 
   // ---- 設定 ----
   static const settings = '/settings';
@@ -72,6 +74,9 @@ class AppRouter {
 
       case profileEdit:
         return MaterialPageRoute(builder: (_) => const ProfileEditPage());
+
+      case profileFamilyEdit:
+        return MaterialPageRoute(builder: (_) => const FamilyEditPage());
 
       // ---------------------------------------------
       // Settings
