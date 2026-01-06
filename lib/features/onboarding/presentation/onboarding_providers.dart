@@ -6,13 +6,18 @@ import '../domain/entities/family_member_request.dart';
 import '../domain/entities/register_request.dart';
 import '../domain/repositories/onboarding_repository.dart';
 import '../domain/usecases/register_user.dart';
-import '../data/mock_onboarding_repository.dart';
+import '../../../core/network/api_client.dart';
+import '../../profile/data/datasources/profile_remote_data_source.dart';
+import '../data/repositories/onboarding_repository_impl.dart';
 
 /// =================================================================
 ///  Repository Provider
 /// =================================================================
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
-  return MockOnboardingRepository();
+  // デフォルトはリモートAPIへ接続。
+  final client = ApiClient();
+  final ds = ProfileRemoteDataSource(client);
+  return OnboardingRepositoryImpl(ds);
 });
 
 /// =================================================================
@@ -34,6 +39,7 @@ class OnboardingState {
   final String birthday;
   final String gender;
   final List<FamilyMemberRequest> families;
+  final bool notificationsEnabled;
 
   const OnboardingState({
     this.agreedTerms = false,
@@ -42,6 +48,7 @@ class OnboardingState {
     this.birthday = "",
     this.gender = "male",
     this.families = const [],
+    this.notificationsEnabled = false,
   });
 
   OnboardingState copyWith({
@@ -51,6 +58,7 @@ class OnboardingState {
     String? birthday,
     String? gender,
     List<FamilyMemberRequest>? families,
+    bool? notificationsEnabled,
   }) {
     return OnboardingState(
       agreedTerms: agreedTerms ?? this.agreedTerms,
@@ -59,6 +67,7 @@ class OnboardingState {
       birthday: birthday ?? this.birthday,
       gender: gender ?? this.gender,
       families: families ?? this.families,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     );
   }
 }
@@ -97,6 +106,9 @@ class OnboardingController extends Notifier<OnboardingState> {
     state = state.copyWith(families: list);
   }
 
+  void setNotificationsEnabled(bool v) =>
+      state = state.copyWith(notificationsEnabled: v);
+
   RegisterRequest toRequest() {
     return RegisterRequest(
       nickname: state.nickname,
@@ -104,6 +116,7 @@ class OnboardingController extends Notifier<OnboardingState> {
       birthday: state.birthday,
       gender: state.gender,
       families: state.families,
+      notificationsEnabled: state.notificationsEnabled,
     );
   }
 

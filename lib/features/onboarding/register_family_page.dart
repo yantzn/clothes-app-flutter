@@ -1,17 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/router.dart';
 import 'presentation/onboarding_providers.dart';
 import 'domain/entities/family_member_request.dart';
 import '../../core/theme.dart';
 
-class RegisterFamilyPage extends ConsumerWidget {
+class RegisterFamilyPage extends ConsumerStatefulWidget {
   const RegisterFamilyPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RegisterFamilyPage> createState() => _RegisterFamilyPageState();
+}
+
+class _RegisterFamilyPageState extends ConsumerState<RegisterFamilyPage> {
+  @override
+  void initState() {
+    super.initState();
+    _skipOnboardingIfRegistered();
+  }
+
+  Future<void> _skipOnboardingIfRegistered() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (!mounted) return;
+    if (userId != null && userId.isNotEmpty) {
+      // 既に登録済み → userId を復元してホームへ
+      ref.read(userIdProvider.notifier).set(userId);
+      await Navigator.pushReplacementNamed(context, AppRouter.home);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final families = state.families;
     final canAddMore = families.length < 10;

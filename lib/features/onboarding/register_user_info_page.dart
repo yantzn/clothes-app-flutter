@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/router.dart';
 import '../../core/location/location_service.dart';
-import '../../core/theme.dart';
 import 'presentation/onboarding_providers.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/date_picker_sheet.dart';
@@ -44,6 +43,7 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
   @override
   void initState() {
     super.initState();
+    _skipOnboardingIfRegistered();
     _nickname = TextEditingController()..addListener(_validate);
     _region = TextEditingController()..addListener(_validate);
     final today = DateTime.now();
@@ -56,6 +56,17 @@ class _RegisterUserInfoPageState extends ConsumerState<RegisterUserInfoPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setRegionFromGPS();
     });
+  }
+
+  Future<void> _skipOnboardingIfRegistered() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (!mounted) return;
+    if (userId != null && userId.isNotEmpty) {
+      // 既に登録済み → userId を復元してホームへ
+      ref.read(userIdProvider.notifier).set(userId);
+      await Navigator.pushReplacementNamed(context, AppRouter.home);
+    }
   }
 
   void _validate() {

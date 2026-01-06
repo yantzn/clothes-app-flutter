@@ -195,3 +195,31 @@ flutter run
 必要に応じて API キーやリージョン設定を `.env` / Secrets に配置してください（OpenWeatherMap）。
 
 ---
+
+## 🔧 ENV（環境変数）で API 接続先を切り替え
+
+本アプリは `.env` ファイルから `API_BASE_URL` を読み込みます。`ENV` という Dart 定数で読み込むファイルを選択できます。
+
+- 開発（Android Emulator の推奨値は `10.0.2.2`）
+
+```bash
+flutter run --dart-define=ENV=development
+```
+
+- 本番
+
+```bash
+flutter run --dart-define=ENV=production
+```
+
+用意済みのファイル:
+
+- `.env.sample` … 例示用
+- `.env.development` … 開発用（デフォルトで `http://10.0.2.2:3000`）
+- `.env.production` … 本番用（例: `https://api.example.com`）
+
+`API_BASE_URL` を各 `.env.*` に設定してください。
+
+アプリ側では `AppConfig.apiBaseUrl` を参照し、`ApiClient.resolve('/api/...')` で環境に応じた `Uri` を生成できます。
+
+---

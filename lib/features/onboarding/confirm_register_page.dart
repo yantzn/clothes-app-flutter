@@ -2,17 +2,57 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../app/router.dart';
 import 'presentation/onboarding_providers.dart';
 import 'domain/entities/register_request.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 
-class ConfirmRegisterPage extends ConsumerWidget {
+class ConfirmRegisterPage extends ConsumerStatefulWidget {
   const ConfirmRegisterPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConfirmRegisterPage> createState() =>
+      _ConfirmRegisterPageState();
+}
+
+class _ConfirmRegisterPageState extends ConsumerState<ConfirmRegisterPage> {
+  bool _requested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _skipOnboardingIfRegisteredElseRequestNotification();
+  }
+
+  Future<void> _skipOnboardingIfRegisteredElseRequestNotification() async {
+    // 既に登録済みならホームへ遷移
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (!mounted) return;
+    if (userId != null && userId.isNotEmpty) {
+      ref.read(userIdProvider.notifier).set(userId);
+      await Navigator.pushReplacementNamed(context, AppRouter.home);
+      return;
+    }
+    // 画面表示直後に一度だけ通知許可をリクエスト
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_requested) return;
+      _requested = true;
+      final current = ref.read(onboardingProvider);
+      if (!current.notificationsEnabled) {
+        final status = await Permission.notification.request();
+        ref
+            .read(onboardingProvider.notifier)
+            .setNotificationsEnabled(status.isGranted);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
 
     return Scaffold(
@@ -86,7 +126,7 @@ class ConfirmRegisterPage extends ConsumerWidget {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => _submit(context, ref),
+              onPressed: () => _submit(context),
               child: const Text("この内容で登録する"),
             ),
           ),
@@ -202,27 +242,31 @@ class ConfirmRegisterPage extends ConsumerWidget {
   // ------------------------------------------------------------
   // ■ 登録処理
   // ------------------------------------------------------------
-  Future<void> _submit(BuildContext context, WidgetRef ref) async {
-    final repo = ref.read(onboardingRepositoryProvider);
-    final RegisterRequest req = ref
-        .read(onboardingProvider.notifier)
-        .toRequest();
+  Future<void> _submit(BuildContext context) async {
+    try {
+      final repo = ref.read(onboardingRepositoryProvider);
+      final RegisterRequest req = ref
+          .read(onboardingProvider.notifier)
+          .toRequest();
 
-    final userId = await repo.registerUser(req);
+      final userId = await repo.registerUser(req);
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("userId", userId);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("userId", userId);
 
-    ref.read(userIdProvider.notifier).set(userId);
+      ref.read(userIdProvider.notifier).set(userId);
 
-    if (context.mounted) {
-      unawaited(
-        Navigator.pushNamedAndRemoveUntil(
+      if (context.mounted) {
+        await Navigator.pushNamedAndRemoveUntil(
           context,
           AppRouter.home,
           (_) => false,
-        ),
-      );
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        AppSnackBar.showError(context, '登録に失敗しました。再度お試しください');
+      }
     }
   }
 }

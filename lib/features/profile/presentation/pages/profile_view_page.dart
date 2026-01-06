@@ -9,7 +9,7 @@ class ProfileViewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(profileProvider);
+    final profileAsync = ref.watch(effectiveProfileProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFD),

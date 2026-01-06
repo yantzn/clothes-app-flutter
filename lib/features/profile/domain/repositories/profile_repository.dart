@@ -4,7 +4,8 @@ import '../entities/profile.dart';
 ///
 /// data 層で mock / API / ローカルDB などに差し替える
 abstract class ProfileRepository {
-  Future<UserProfile> loadProfile();
+  Future<UserProfile> loadProfile(String userId);
 
-  Future<void> saveProfile(UserProfile profile);
+  /// 部分更新（PATCH /profile）
+  Future<UserProfile> patchProfile(UserProfile profile);
 }

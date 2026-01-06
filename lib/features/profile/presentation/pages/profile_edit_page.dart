@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clothes_app/features/profile/domain/profile.dart';
 import 'package:clothes_app/features/profile/presentation/profile_providers.dart';
@@ -46,6 +45,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     _birthdayController = TextEditingController(text: initialBirthdayText);
     _nicknameController = TextEditingController(text: ob.nickname);
     _gender = initialGender;
+
+    // 実効プロフィールでの初期値上書き（API成功時はサーバ値を優先）
+    _prefillFromEffective();
   }
 
   @override
@@ -64,6 +66,23 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   }
 
   void _showInfoSnack(String message) => AppSnackBar.show(context, message);
+
+  Future<void> _prefillFromEffective() async {
+    try {
+      final effective = await ref.read(effectiveProfileProvider.future);
+      if (!mounted) return;
+      setState(() {
+        _baseProfile = effective;
+        _regionController.text = effective.region;
+        _birthdayController.text = _formatDateSlash(effective.birthday);
+        _gender = effective.gender;
+      });
+      // 編集用の保持にも反映
+      ref.read(editingProfileProvider.notifier).setProfile(effective);
+    } catch (_) {
+      // フォールバック（オンボーディング初期値のまま）
+    }
+  }
 
   Future<void> _setRegionFromGPS() async {
     setState(() => _loadingLocation = true);
@@ -113,7 +132,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       initial = _baseProfile!.birthday;
     }
 
-    DateTime selected = initial;
+    // selected は未使用のため削除
 
     final picked = await showDatePickerSheet(
       context,
@@ -229,15 +248,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     }
 
     // 2) 更新データ生成
-    final base =
-        _baseProfile ??
-        UserProfile(
-          userId: 'test-user-3',
-          region: '',
-          birthday: birthday,
-          gender: _gender,
-          notificationsEnabled: true,
-        );
+    // ユーザーID未設定の保存は禁止（フォールバックの test-user は使用しない）
+    final base = _baseProfile;
+    if (base == null || base.userId.isEmpty) {
+      if (mounted) {
+        AppSnackBar.showError(context, 'ユーザー情報が取得できていません。やり直してください');
+      }
+      return;
+    }
 
     final updated = base.copyWith(
       region: _regionController.text,
@@ -251,21 +269,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       await ref.read(profileProvider.notifier).save(updated);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '保存に失敗しました。再度お試しください',
-              style: TextStyle(color: Colors.white),
-            ),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-            backgroundColor: AppTheme.primaryBlue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-        );
+        AppSnackBar.showError(context, '保存に失敗しました。再度お試しください');
       }
       return;
     }
@@ -275,18 +279,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     ref.read(onboardingProvider.notifier).setNickname(_nicknameController.text);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('保存しました', style: TextStyle(color: Colors.white)),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-          backgroundColor: AppTheme.primaryBlue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ),
-      );
+      AppSnackBar.showSuccess(context, '保存しました');
       Navigator.pop(context);
     }
   }

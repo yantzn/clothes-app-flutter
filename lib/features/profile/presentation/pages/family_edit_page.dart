@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clothes_app/features/onboarding/presentation/onboarding_providers.dart';
 import 'package:clothes_app/features/onboarding/domain/entities/family_member_request.dart';
 import 'package:clothes_app/core/theme.dart';
 import 'package:clothes_app/core/widgets/date_picker_sheet.dart';
+import 'package:clothes_app/core/widgets/app_snackbar.dart';
+import '../../presentation/profile_providers.dart';
+import 'package:clothes_app/features/profile/domain/entities/family_member.dart';
 
 class FamilyEditPage extends ConsumerWidget {
   const FamilyEditPage({super.key});
@@ -57,26 +59,58 @@ class FamilyEditPage extends ConsumerWidget {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text(
-                      '保存しました',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 3),
-                    backgroundColor: AppTheme.primaryBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                );
-                Navigator.pop(context);
+              onPressed: () async {
+                final families = ref.read(onboardingProvider).families;
+                final userId = ref.read(userIdProvider);
+                if (userId == null || userId.isEmpty) {
+                  if (context.mounted) {
+                    AppSnackBar.showError(
+                      context,
+                      'ユーザー情報が取得できていません。やり直してください',
+                    );
+                  }
+                  return;
+                }
+                try {
+                  // 現在のプロフィールを取得し、familiesのみ差し替えてPATCH
+                  final current = await ref.read(
+                    effectiveProfileProvider.future,
+                  );
+                  final nextProfile = current.copyWith(
+                    families: families.map((f) {
+                      // Onboardingの文字列日付(YYYY/MM/DD)をDateTimeへ
+                      try {
+                        final parts = f.birthday.split('/');
+                        final dt = DateTime(
+                          int.parse(parts[0]),
+                          int.parse(parts[1]),
+                          int.parse(parts[2]),
+                        );
+                        return FamilyMember(
+                          name: f.name,
+                          birthday: dt,
+                          gender: f.gender,
+                        );
+                      } catch (_) {
+                        return FamilyMember(
+                          name: f.name,
+                          birthday: DateTime(2010, 1, 1),
+                          gender: f.gender,
+                        );
+                      }
+                    }).toList(),
+                  );
+                  final repo = ref.read(profileRepositoryProvider);
+                  await repo.patchProfile(nextProfile);
+                  if (context.mounted) {
+                    AppSnackBar.showSuccess(context, '保存しました');
+                    Navigator.pop(context);
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    AppSnackBar.showError(context, '保存に失敗しました。再度お試しください');
+                  }
+                }
               },
               child: const Text('保存する'),
             ),
@@ -177,24 +211,7 @@ class FamilyEditPage extends ConsumerWidget {
                   Navigator.pop(context);
                 } catch (_) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        '保存に失敗しました。再度お試しください',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                      backgroundColor: AppTheme.primaryBlue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                    ),
-                  );
+                  AppSnackBar.showError(context, '保存に失敗しました。再度お試しください');
                 }
               },
               child: const Text('削除する'),
@@ -375,33 +392,9 @@ class FamilyEditPage extends ConsumerWidget {
                                                 );
                                             Navigator.pop(context);
                                           } catch (_) {
-                                            ScaffoldMessenger.of(
+                                            AppSnackBar.showError(
                                               context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: const Text(
-                                                  '保存に失敗しました。再度お試しください',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                duration: const Duration(
-                                                  seconds: 3,
-                                                ),
-                                                backgroundColor:
-                                                    AppTheme.primaryBlue,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8,
-                                                    ),
-                                              ),
+                                              '保存に失敗しました。再度お試しください',
                                             );
                                           }
                                         }
@@ -546,7 +539,7 @@ class FamilyEditPage extends ConsumerWidget {
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
-                              value: gender,
+                              initialValue: gender,
                               decoration: const InputDecoration(
                                 labelText: '性別',
                               ),
@@ -596,33 +589,9 @@ class FamilyEditPage extends ConsumerWidget {
                                                 );
                                             Navigator.pop(context);
                                           } catch (_) {
-                                            ScaffoldMessenger.of(
+                                            AppSnackBar.showError(
                                               context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: const Text(
-                                                  '保存に失敗しました。再度お試しください',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                duration: const Duration(
-                                                  seconds: 3,
-                                                ),
-                                                backgroundColor:
-                                                    AppTheme.primaryBlue,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8,
-                                                    ),
-                                              ),
+                                              '保存に失敗しました。再度お試しください',
                                             );
                                           }
                                         }

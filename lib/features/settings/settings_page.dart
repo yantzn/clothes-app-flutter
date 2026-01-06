@@ -51,9 +51,9 @@ class SettingsPage extends ConsumerWidget {
                 children: [
                   // ユーザ情報はプロフィールプロバイダ優先で表示（戻り後も最新が反映）
                   profileAsync.when(
-                    loading: () => Column(
+                    loading: () => const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         ListTile(
                           leading: Icon(
                             Icons.info_outline,
@@ -79,20 +79,39 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    error: (_, __) => Column(
+                    error: (error, stackTrace) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const ListTile(
-                          leading: Icon(
+                        ListTile(
+                          leading: const Icon(
                             Icons.info_outline,
                             color: AppTheme.lightBlue,
                           ),
-                          title: Text(
+                          title: const Text(
                             'ユーザ情報',
                             style: TextStyle(
                               color: AppTheme.textDark,
                               fontWeight: FontWeight.w600,
                             ),
+                          ),
+                          trailing: IconButton(
+                            tooltip: '編集',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () async {
+                              // API取得に失敗していても effectiveProfileProvider 経由でフォールバック生成
+                              final ep = await ref.read(
+                                effectiveProfileProvider.future,
+                              );
+                              ref
+                                  .read(editingProfileProvider.notifier)
+                                  .setProfile(ep);
+                              if (context.mounted) {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRouter.profileEdit,
+                                );
+                              }
+                            },
                           ),
                         ),
                         // フォールバックとしてオンボーディングの値を表示
@@ -328,7 +347,7 @@ class SettingsPage extends ConsumerWidget {
                 onChanged: null,
                 secondary: Icon(Icons.notifications_none),
               ),
-              error: (_, __) => ListTile(
+              error: (error, stackTrace) => ListTile(
                 leading: const Icon(
                   Icons.notifications_off_outlined,
                   color: Colors.redAccent,
