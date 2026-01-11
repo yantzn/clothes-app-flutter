@@ -6,6 +6,7 @@ class SceneDetailCard extends StatelessWidget {
   final String comment;
   final List<String> items;
   final String? medicalNote;
+  final List<String>? notes;
 
   const SceneDetailCard({
     super.key,
@@ -13,6 +14,7 @@ class SceneDetailCard extends StatelessWidget {
     required this.comment,
     required this.items,
     this.medicalNote,
+    this.notes,
   });
 
   @override
@@ -128,6 +130,54 @@ class SceneDetailCard extends StatelessWidget {
                           ),
                         ],
                       ),
+
+                    // 注意事項（Home suggestion.notes）
+                    if (notes != null && notes!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '注意事項',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: notes!
+                            .map(
+                              (n) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Baseline(
+                                      baseline:
+                                          16, // テキストのfontSizeやlineHeightに合わせて調整
+                                      baselineType: TextBaseline.alphabetic,
+                                      child: const Icon(
+                                        Icons.circle,
+                                        size: 6,
+                                        color: AppTheme.primaryBlue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        n,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),

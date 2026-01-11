@@ -11,19 +11,20 @@ List<SceneClothes> mapFamilySuggestionsToScenes(
 ) {
   return labels.map((label) {
     final async = suggestionsMap[label];
-    String displayLabel = label;
-    List<String> items = const [];
-    String comment = '';
+    String displayLabel = label; // Homeのmember.nameをそのまま表示
+    // ローディング時も前回値を維持してフリッカーを抑制
+    List<String> items = async?.value?.layers ?? const [];
+    String comment = async?.value?.summary ?? '';
 
     if (async != null) {
       async.when(
         data: (c) {
-          displayLabel = canonicalNickname(c);
+          // タブ名は Home レスポンスの name（labels）を優先
           items = List<String>.from(c.layers);
           comment = c.summary;
         },
         loading: () {
-          comment = '読み込み中…';
+          // 直前値を維持（何もしない）
         },
         error: (err, st) {
           comment = '服装データを取得できませんでした';
@@ -35,25 +36,8 @@ List<SceneClothes> mapFamilySuggestionsToScenes(
       scene: displayLabel,
       comment: comment,
       items: items,
-      medicalNote: null,
+      notes: async?.value?.notes,
+      ageGroup: async?.value?.ageGroup,
     );
   }).toList();
-}
-
-/// 提案に含まれるID/年齢層から表示用のニックネームへ正規化
-String canonicalNickname(ClothesSuggestion c) {
-  final id = c.userId.toLowerCase();
-  if (id.contains('dad')) return 'パパ';
-  if (id.contains('daughter')) return '娘';
-  if (id.contains('son')) return '息子';
-  if (id.contains('tarou') || id.contains('self')) return 'たろう';
-
-  switch (c.ageGroup.toLowerCase()) {
-    case 'child':
-      return 'こども';
-    case 'adult':
-      return 'おとな';
-    default:
-      return '家族';
-  }
 }

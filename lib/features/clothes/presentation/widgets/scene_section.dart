@@ -40,7 +40,7 @@ class SceneSection extends StatelessWidget {
           labels: sceneList.map((e) => e.scene).toList(),
           selectedIndex: selectedIndex,
           onChanged: onSceneChanged,
-          iconBuilder: (label) => _sceneIcon(label),
+          iconBuilder: (label) => _iconForLabel(label),
           leadingInset: leadingInset,
           extraLeftShift: extraLeftShift,
           compact: true,
@@ -57,6 +57,7 @@ class SceneSection extends StatelessWidget {
                 comment: scene.comment,
                 items: scene.items,
                 medicalNote: scene.medicalNote,
+                notes: scene.notes,
               ),
             ),
           ),
@@ -69,6 +70,43 @@ class SceneSection extends StatelessWidget {
     if (name.contains('室内')) return Icons.home_rounded;
     if (name.contains('おでかけ')) return Icons.directions_walk_rounded;
     return Icons.checkroom_outlined;
+  }
+
+  // ラベルから該当シーンを引き当て、ageGroupがあればそれに応じたアイコンにする
+  IconData _iconForLabel(String label) {
+    final SceneClothes s = sceneList.firstWhere(
+      (e) => e.scene == label,
+      orElse: () => const SceneClothes(scene: '', comment: '', items: []),
+    );
+
+    final String? ag = s.ageGroup;
+    if (ag != null && ag.isNotEmpty) {
+      return _ageGroupIcon(ag);
+    }
+    // 年齢層情報がない場合は従来のシーン名ベース
+    return _sceneIcon(label);
+  }
+
+  // 年齢層に応じたアイコンの割り当て
+  IconData _ageGroupIcon(String ageGroup) {
+    final g = ageGroup.toLowerCase();
+    if (g.contains('infant') || g.contains('baby')) {
+      return Icons.child_care; // 乳幼児
+    }
+    if (g.contains('toddler')) {
+      return Icons.escalator_warning; // 幼児
+    }
+    if (g.contains('child') || g.contains('kids')) {
+      return Icons.child_care; // 子ども
+    }
+    if (g.contains('teen')) {
+      return Icons.person_outline; // ティーン
+    }
+    if (g.contains('adult')) {
+      return Icons.person; // 大人
+    }
+    // 不明な場合のフォールバック
+    return Icons.person;
   }
 
   // 推奨のインデントプリセット

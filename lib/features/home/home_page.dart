@@ -7,7 +7,6 @@ import 'package:clothes_app/app/router.dart';
 
 // ドメイン側プロバイダ
 import 'package:clothes_app/features/weather/presentation/weather_providers.dart';
-import 'package:clothes_app/features/clothes/presentation/clothes_providers.dart';
 import 'package:clothes_app/features/clothes/presentation/family_scene_clothes_provider.dart';
 import 'package:clothes_app/features/clothes/presentation/mappers/family_scene_mapper.dart';
 import 'package:clothes_app/features/onboarding/presentation/onboarding_providers.dart';
@@ -17,6 +16,8 @@ import 'package:clothes_app/core/widgets/section_header.dart';
 import 'package:clothes_app/core/widgets/section_container.dart';
 import 'package:clothes_app/features/clothes/presentation/widgets/scene_section.dart';
 import 'package:clothes_app/features/weather/presentation/widgets/weather_hero_async.dart';
+import 'package:clothes_app/features/home/presentation/home_providers.dart';
+import 'package:clothes_app/features/home/domain/entities/home_today.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -42,9 +43,26 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final weatherAsync = ref.watch(todayWeatherProvider);
-    final clothesAsync = ref.watch(todayClothesProvider);
+    final weatherAsync = ref.watch(homeWeatherProvider);
     final familySuggestionsMap = ref.watch(familySuggestionsProvider);
+    final homeAsync = ref.watch(homeSnapshotProvider);
+    // Home APIのsummaryをヒーローの「今日のひとこと」に反映するための置き換え
+    final AsyncValue<ClothesSuggestion> summaryClothesAsync = homeAsync
+        .whenData((HomeToday data) {
+          return ClothesSuggestion(
+            userId: '',
+            ageGroup: '',
+            temperature: const TemperatureInfo(
+              value: 0,
+              feelsLike: 0,
+              category: '',
+            ),
+            summary: data.summary,
+            layers: const [],
+            notes: const [],
+            references: const [],
+          );
+        });
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -66,8 +84,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         top: false,
         child: RefreshIndicator(
           onRefresh: () async {
-            await ref.read(todayWeatherProvider.notifier).reload();
-            await ref.read(todayClothesProvider.notifier).reload();
+            // 一時的なローディング表示を出さずに静かに再取得
+            await ref.read(homeSnapshotProvider.notifier).refreshSilently();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -78,8 +96,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ////////////////////////////////////////////////////////////
                 WeatherHeroAsync(
                   weatherAsync: weatherAsync,
-                  clothesAsync: clothesAsync,
+                  clothesAsync: summaryClothesAsync,
                 ),
+
+                // ② 今日のひとこと（重複回避のため Hero フッターに集約）
 
                 ////////////////////////////////////////////////////////////
                 // ③ 家族別の服装提案（タブはニックネーム）
@@ -130,16 +150,8 @@ class _FamilySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (familiesNicknames.isEmpty) {
-      return const SectionContainer(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SectionHeader(icon: Icons.group_outlined, title: '家族別の服装'),
-            SizedBox(height: 12),
-            Text('家族情報が未登録です。プロフィールから追加してください。'),
-          ],
-        ),
-      );
+      // 家族情報が未登録の場合はホーム画面に何も表示しない
+      return const SizedBox.shrink();
     }
 
     // 家族ニックネームごとの提案を SceneClothes に変換（UI外へ分離した純関数）

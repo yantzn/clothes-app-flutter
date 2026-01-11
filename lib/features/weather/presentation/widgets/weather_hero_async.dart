@@ -54,6 +54,9 @@ class WeatherHeroAsync extends StatelessWidget {
           temperature: w.value,
           feelsLike: w.feelsLike,
           region: w.region,
+          humidity: w.humidity,
+          windSpeed: w.windSpeed,
+          category: w.category,
           footer: footer,
         );
       },
