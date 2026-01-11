@@ -106,6 +106,9 @@ class OnboardingController extends Notifier<OnboardingState> {
     state = state.copyWith(families: list);
   }
 
+  void setFamilies(List<FamilyMemberRequest> list) =>
+      state = state.copyWith(families: [...list]);
+
   void setNotificationsEnabled(bool v) =>
       state = state.copyWith(notificationsEnabled: v);
 

@@ -41,9 +41,12 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final initialGender =
         p?.gender ?? (ob.gender.isNotEmpty ? ob.gender : 'male');
 
+    final initialNickname = (p?.nickname.isNotEmpty == true)
+        ? p!.nickname
+        : (ob.nickname.isNotEmpty ? ob.nickname : '');
     _regionController = TextEditingController(text: initialRegion);
     _birthdayController = TextEditingController(text: initialBirthdayText);
-    _nicknameController = TextEditingController(text: ob.nickname);
+    _nicknameController = TextEditingController(text: initialNickname);
     _gender = initialGender;
 
     // 実効プロフィールでの初期値上書き（API成功時はサーバ値を優先）
@@ -76,6 +79,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         _regionController.text = effective.region;
         _birthdayController.text = _formatDateSlash(effective.birthday);
         _gender = effective.gender;
+        _nicknameController.text = effective.nickname;
       });
       // 編集用の保持にも反映
       ref.read(editingProfileProvider.notifier).setProfile(effective);
@@ -161,42 +165,37 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         backgroundColor: const Color(0xFFF7FAFD),
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    children: [
-                      // ---- 入力フォームを白カードにまとめる ----
-                      _ProfileFormCard(
-                        nicknameController: _nicknameController,
-                        regionController: _regionController,
-                        birthdayController: _birthdayController,
-                        gender: _gender,
-                        onGenderChanged: (v) => setState(() => _gender = v),
-                        loadingLocation: _loadingLocation,
-                        permissionDenied: _permissionDenied,
-                        onTapLocation: () async {
-                          FocusScope.of(context).unfocus();
-                          if (_permissionDenied) {
-                            _showInfoSnack('位置情報が許可されていません。許可後に再取得してください');
-                            await LocationService.openLocationSettings();
-                          } else {
-                            await _setRegionFromGPS();
-                          }
-                        },
-                        onTapBirthdayPicker: _pickDate,
-                      ),
-                    ],
-                  ),
-                ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            children: [
+              // ---- 入力フォームを白カードにまとめる ----
+              _ProfileFormCard(
+                nicknameController: _nicknameController,
+                regionController: _regionController,
+                birthdayController: _birthdayController,
+                gender: _gender,
+                onGenderChanged: (v) => setState(() => _gender = v),
+                loadingLocation: _loadingLocation,
+                permissionDenied: _permissionDenied,
+                onTapLocation: () async {
+                  FocusScope.of(context).unfocus();
+                  if (_permissionDenied) {
+                    _showInfoSnack('位置情報が許可されていません。許可後に再取得してください');
+                    await LocationService.openLocationSettings();
+                  } else {
+                    await _setRegionFromGPS();
+                  }
+                },
+                onTapBirthdayPicker: _pickDate,
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -262,6 +261,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       birthday: birthday,
       gender: _gender,
       notificationsEnabled: base.notificationsEnabled,
+      nickname: _nicknameController.text,
     );
 
     // 3) API保存（通信エラーや登録失敗時のSnackBar表示）

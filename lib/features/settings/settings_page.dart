@@ -4,6 +4,8 @@ import 'package:clothes_app/core/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clothes_app/features/onboarding/presentation/onboarding_providers.dart';
 import 'package:clothes_app/features/profile/presentation/profile_providers.dart';
+import 'package:clothes_app/features/profile/domain/entities/profile.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -36,394 +38,523 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ユーザ情報表示
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ユーザ情報はプロフィールプロバイダ優先で表示（戻り後も最新が反映）
-                  profileAsync.when(
-                    loading: () => const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ListTile(
-                          leading: Icon(
-                            Icons.info_outline,
-                            color: AppTheme.lightBlue,
-                          ),
-                          title: Text(
-                            'ユーザ情報',
-                            style: TextStyle(
-                              color: AppTheme.textDark,
-                              fontWeight: FontWeight.w600,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.refresh(profileProvider.future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            // ユーザ情報表示
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ユーザ情報はプロフィールプロバイダ優先で表示（戻り後も最新が反映）
+                    profileAsync.when(
+                      loading: () => const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: Icon(
+                              Icons.info_outline,
+                              color: AppTheme.lightBlue,
+                            ),
+                            title: Text(
+                              'ユーザ情報',
+                              style: TextStyle(
+                                color: AppTheme.textDark,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Text(
-                            '読み込み中…',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                        ),
-                      ],
-                    ),
-                    error: (error, stackTrace) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ListTile(
-                          leading: const Icon(
-                            Icons.info_outline,
-                            color: AppTheme.lightBlue,
-                          ),
-                          title: const Text(
-                            'ユーザ情報',
-                            style: TextStyle(
-                              color: AppTheme.textDark,
-                              fontWeight: FontWeight.w600,
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              '読み込み中…',
+                              style: TextStyle(color: AppTheme.textLight),
                             ),
                           ),
-                          trailing: IconButton(
-                            tooltip: '編集',
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () async {
-                              // API取得に失敗していても effectiveProfileProvider 経由でフォールバック生成
-                              final ep = await ref.read(
-                                effectiveProfileProvider.future,
-                              );
-                              ref
-                                  .read(editingProfileProvider.notifier)
-                                  .setProfile(ep);
-                              if (context.mounted) {
+                        ],
+                      ),
+                      error: (error, stackTrace) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(
+                              Icons.info_outline,
+                              color: AppTheme.lightBlue,
+                            ),
+                            title: const Text(
+                              'ユーザ情報',
+                              style: TextStyle(
+                                color: AppTheme.textDark,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              tooltip: '編集',
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () async {
+                                // API取得に失敗していても effectiveProfileProvider 経由でフォールバック生成
+                                final ep = await ref.read(
+                                  effectiveProfileProvider.future,
+                                );
+                                ref
+                                    .read(editingProfileProvider.notifier)
+                                    .setProfile(ep);
+                                if (context.mounted) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouter.profileEdit,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          // フォールバックとしてオンボーディングの値を表示
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              'ニックネーム',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              onboarding.nickname.isEmpty
+                                  ? '未設定'
+                                  : onboarding.nickname,
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '地域',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              onboarding.region.isEmpty
+                                  ? '未設定'
+                                  : onboarding.region,
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '生年月日',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              onboarding.birthday.isEmpty
+                                  ? '未設定'
+                                  : onboarding.birthday,
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '性別',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              _genderLabel(onboarding.gender),
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                      data: (p) => Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(
+                              Icons.info_outline,
+                              color: AppTheme.lightBlue,
+                            ),
+                            title: const Text(
+                              'ユーザ情報',
+                              style: TextStyle(
+                                color: AppTheme.textDark,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              tooltip: '編集',
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () {
+                                // 編集用に現在のプロフィールをセットしてから遷移
+                                ref
+                                    .read(editingProfileProvider.notifier)
+                                    .setProfile(p);
                                 Navigator.pushNamed(
                                   context,
                                   AppRouter.profileEdit,
                                 );
-                              }
-                            },
-                          ),
-                        ),
-                        // フォールバックとしてオンボーディングの値を表示
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            'ニックネーム',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            onboarding.nickname.isEmpty
-                                ? '未設定'
-                                : onboarding.nickname,
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '地域',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            onboarding.region.isEmpty
-                                ? '未設定'
-                                : onboarding.region,
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '生年月日',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            onboarding.birthday.isEmpty
-                                ? '未設定'
-                                : onboarding.birthday,
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '性別',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            _genderLabel(onboarding.gender),
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                      ],
-                    ),
-                    data: (p) => Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(
-                            Icons.info_outline,
-                            color: AppTheme.lightBlue,
-                          ),
-                          title: const Text(
-                            'ユーザ情報',
-                            style: TextStyle(
-                              color: AppTheme.textDark,
-                              fontWeight: FontWeight.w600,
+                              },
                             ),
                           ),
-                          trailing: IconButton(
-                            tooltip: '編集',
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () {
-                              // 編集用に現在のプロフィールをセットしてから遷移
-                              ref
-                                  .read(editingProfileProvider.notifier)
-                                  .setProfile(p);
-                              Navigator.pushNamed(
-                                context,
-                                AppRouter.profileEdit,
-                              );
-                            },
-                          ),
-                        ),
-                        // ニックネームはオンボーディングにのみ保持されている想定のため補助表示
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            'ニックネーム',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            onboarding.nickname.isEmpty
-                                ? '未設定'
-                                : onboarding.nickname,
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        // プロファイル優先、未設定はオンボーディング値にフォールバック
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '地域',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            (p.region.isNotEmpty
-                                ? p.region
-                                : (onboarding.region.isNotEmpty
-                                      ? onboarding.region
-                                      : '未設定')),
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '生年月日',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            '${p.birthday.year.toString().padLeft(4, '0')}/${p.birthday.month.toString().padLeft(2, '0')}/${p.birthday.day.toString().padLeft(2, '0')}',
-                            style: const TextStyle(color: AppTheme.textDark),
-                          ),
-                        ),
-                        ListTile(
-                          dense: true,
-                          title: const Text(
-                            '性別',
-                            style: TextStyle(color: AppTheme.textLight),
-                          ),
-                          subtitle: Text(
-                            _genderLabel(
-                              (p.gender.isNotEmpty
-                                  ? p.gender
-                                  : onboarding.gender),
+                          // ニックネームはサーバ値優先、なければフォールバック
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              'ニックネーム',
+                              style: TextStyle(color: AppTheme.textLight),
                             ),
-                            style: const TextStyle(color: AppTheme.textDark),
+                            subtitle: Text(
+                              p.nickname.isNotEmpty
+                                  ? p.nickname
+                                  : (onboarding.nickname.isNotEmpty
+                                        ? onboarding.nickname
+                                        : '未設定'),
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 家族情報表示
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    leading: const Icon(
-                      Icons.group_outlined,
-                      color: AppTheme.lightBlue,
-                    ),
-                    title: const Text(
-                      '家族情報',
-                      style: TextStyle(
-                        color: AppTheme.textDark,
-                        fontWeight: FontWeight.w600,
+                          // プロファイル優先、未設定はオンボーディング値にフォールバック
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '地域',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              (p.region.isNotEmpty
+                                  ? p.region
+                                  : (onboarding.region.isNotEmpty
+                                        ? onboarding.region
+                                        : '未設定')),
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '生年月日',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              '${p.birthday.year.toString().padLeft(4, '0')}/${p.birthday.month.toString().padLeft(2, '0')}/${p.birthday.day.toString().padLeft(2, '0')}',
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text(
+                              '性別',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                            subtitle: Text(
+                              _genderLabel(
+                                (p.gender.isNotEmpty
+                                    ? p.gender
+                                    : onboarding.gender),
+                              ),
+                              style: const TextStyle(color: AppTheme.textDark),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    trailing: IconButton(
-                      tooltip: '編集',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRouter.profileFamilyEdit,
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 家族情報表示（サーバ値優先、エラー時はオンボーディングにフォールバック）
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      leading: const Icon(
+                        Icons.group_outlined,
+                        color: AppTheme.lightBlue,
+                      ),
+                      title: const Text(
+                        '家族情報',
+                        style: TextStyle(
+                          color: AppTheme.textDark,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        tooltip: '編集',
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRouter.profileFamilyEdit,
+                          );
+                        },
+                      ),
+                    ),
+                    profileAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          '読み込み中…',
+                          style: TextStyle(color: AppTheme.textLight),
+                        ),
+                      ),
+                      error: (e, st) {
+                        final f = onboarding.families;
+                        if (f.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              '未登録',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: f
+                              .map(
+                                (x) => ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.person_outline,
+                                    color: AppTheme.lightBlue,
+                                  ),
+                                  title: Text(
+                                    x.name,
+                                    style: const TextStyle(
+                                      color: AppTheme.textDark,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '生年月日: ${x.birthday} / 性別: ${_genderLabel(x.gender)}',
+                                    style: const TextStyle(
+                                      color: AppTheme.textLight,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                      data: (p) {
+                        final f = p.families;
+                        if (f.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              '未登録',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: f
+                              .map(
+                                (x) => ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.person_outline,
+                                    color: AppTheme.lightBlue,
+                                  ),
+                                  title: Text(
+                                    x.name,
+                                    style: const TextStyle(
+                                      color: AppTheme.textDark,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '生年月日: '
+                                    '${x.birthday.year.toString().padLeft(4, '0')}/'
+                                    '${x.birthday.month.toString().padLeft(2, '0')}/'
+                                    '${x.birthday.day.toString().padLeft(2, '0')}'
+                                    ' / 性別: ${_genderLabel(x.gender)}',
+                                    style: const TextStyle(
+                                      color: AppTheme.textLight,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         );
                       },
                     ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 通知設定（プロフィールの通知設定を反映・更新）
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: profileAsync.when(
+                loading: () => const SwitchListTile(
+                  title: Text(
+                    '通知設定',
+                    style: TextStyle(color: AppTheme.textDark),
                   ),
-                  if (onboarding.families.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        '未登録',
-                        style: TextStyle(color: AppTheme.textLight),
-                      ),
-                    )
-                  else
-                    ...onboarding.families.map(
-                      (f) => ListTile(
-                        dense: true,
-                        leading: const Icon(
-                          Icons.person_outline,
-                          color: AppTheme.lightBlue,
-                        ),
-                        title: Text(
-                          f.name,
-                          style: const TextStyle(color: AppTheme.textDark),
-                        ),
-                        subtitle: Text(
-                          '生年月日: ${f.birthday} / 性別: ${_genderLabel(f.gender)}',
-                          style: const TextStyle(color: AppTheme.textLight),
-                        ),
-                      ),
-                    ),
-                ],
+                  subtitle: Text(
+                    '天気や服装の更新を受け取る',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                  value: false,
+                  onChanged: null,
+                  secondary: Icon(Icons.notifications_none),
+                ),
+                error: (error, stackTrace) => ListTile(
+                  leading: const Icon(
+                    Icons.notifications_off_outlined,
+                    color: Colors.redAccent,
+                  ),
+                  title: const Text(
+                    '通知設定を取得できませんでした',
+                    style: TextStyle(color: AppTheme.textDark),
+                  ),
+                  subtitle: const Text(
+                    '時間をおいて再度お試しください',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => ref.refresh(profileProvider.future),
+                  ),
+                ),
+                data: (p) => SwitchListTile(
+                  title: const Text(
+                    '通知設定',
+                    style: TextStyle(color: AppTheme.textDark),
+                  ),
+                  subtitle: const Text(
+                    '天気や服装の更新を受け取る',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                  value: p.notificationsEnabled,
+                  onChanged: (v) async {
+                    await _handleNotificationToggle(context, ref, p, v);
+                  },
+                  secondary: const Icon(Icons.notifications_none),
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // 通知設定（プロフィールの通知設定を反映・更新）
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: profileAsync.when(
-              loading: () => const SwitchListTile(
-                title: Text('通知設定', style: TextStyle(color: AppTheme.textDark)),
-                subtitle: Text(
-                  '天気や服装の更新を受け取る',
-                  style: TextStyle(color: AppTheme.textLight),
-                ),
-                value: false,
-                onChanged: null,
-                secondary: Icon(Icons.notifications_none),
+            // プライバシーポリシー
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              error: (error, stackTrace) => ListTile(
-                leading: const Icon(
-                  Icons.notifications_off_outlined,
-                  color: Colors.redAccent,
-                ),
-                title: const Text(
-                  '通知設定を取得できませんでした',
+              child: const ListTile(
+                leading: Icon(Icons.privacy_tip_outlined),
+                title: Text(
+                  'プライバシーポリシー',
                   style: TextStyle(color: AppTheme.textDark),
                 ),
-                subtitle: const Text(
-                  '時間をおいて再度お試しください',
-                  style: TextStyle(color: AppTheme.textLight),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.refresh(profileProvider.future),
-                ),
-              ),
-              data: (p) => SwitchListTile(
-                title: const Text(
-                  '通知設定',
-                  style: TextStyle(color: AppTheme.textDark),
-                ),
-                subtitle: const Text(
-                  '天気や服装の更新を受け取る',
-                  style: TextStyle(color: AppTheme.textLight),
-                ),
-                value: p.notificationsEnabled,
-                onChanged: (v) async {
-                  await ref
-                      .read(profileProvider.notifier)
-                      .save(p.copyWith(notificationsEnabled: v));
-                },
-                secondary: const Icon(Icons.notifications_none),
+                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
               ),
             ),
-          ),
 
-          const SizedBox(height: 12),
-
-          // プライバシーポリシー
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const ListTile(
-              leading: Icon(Icons.privacy_tip_outlined),
-              title: Text(
-                'プライバシーポリシー',
-                style: TextStyle(color: AppTheme.textDark),
+            // 利用規約
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              child: const ListTile(
+                leading: Icon(Icons.description_outlined),
+                title: Text('利用規約', style: TextStyle(color: AppTheme.textDark)),
+                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              ),
             ),
+
+            const SizedBox(height: 40),
+
+            Center(
+              child: Text(
+                'バージョン 1.0.0',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleNotificationToggle(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile p,
+    bool v,
+  ) async {
+    if (!v) {
+      // OFF はそのままサーバへ反映
+      await ref
+          .read(profileProvider.notifier)
+          .save(p.copyWith(notificationsEnabled: false));
+      return;
+    }
+
+    // ON の場合は OS 権限を確認
+    final status = await Permission.notification.status;
+    if (status.isGranted) {
+      await ref
+          .read(profileProvider.notifier)
+          .save(p.copyWith(notificationsEnabled: true));
+      return;
+    }
+
+    // 権限がない場合は設定画面を案内
+    final open = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('通知権限がありません'),
+        content: const Text('OSの通知設定を開いて権限を付与してください。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
           ),
-
-          // 利用規約
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const ListTile(
-              leading: Icon(Icons.description_outlined),
-              title: Text('利用規約', style: TextStyle(color: AppTheme.textDark)),
-              trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          Center(
-            child: Text(
-              'バージョン 1.0.0',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('設定を開く'),
           ),
         ],
       ),
     );
+
+    if (open == true) {
+      await openAppSettings();
+      // 設定画面から戻ったら再チェック
+      final s2 = await Permission.notification.status;
+      final granted = s2.isGranted;
+      await ref
+          .read(profileProvider.notifier)
+          .save(p.copyWith(notificationsEnabled: granted));
+    }
   }
 }

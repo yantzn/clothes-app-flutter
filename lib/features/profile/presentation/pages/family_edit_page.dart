@@ -8,11 +8,61 @@ import 'package:clothes_app/core/widgets/app_snackbar.dart';
 import '../../presentation/profile_providers.dart';
 import 'package:clothes_app/features/profile/domain/entities/family_member.dart';
 
-class FamilyEditPage extends ConsumerWidget {
+class FamilyEditPage extends ConsumerStatefulWidget {
   const FamilyEditPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FamilyEditPage> createState() => _FamilyEditPageState();
+}
+
+class _FamilyEditPageState extends ConsumerState<FamilyEditPage> {
+  @override
+  void initState() {
+    super.initState();
+    // 画面初期表示時にサーバーの家族情報でOnboardingを初期化（空の場合のみ）
+    // これにより編集画面に既存の家族情報が表示される
+    Future.microtask(() async {
+      final current = ref.read(onboardingProvider);
+      if (current.families.isEmpty) {
+        try {
+          final profile = await ref.read(effectiveProfileProvider.future);
+          final list = profile.families.map((f) {
+            return FamilyMemberRequest(
+              name: f.name,
+              birthday: _formatYmd(f.birthday),
+              gender: _toUiGender(f.gender),
+            );
+          }).toList();
+          ref.read(onboardingProvider.notifier).setFamilies(list);
+        } catch (_) {
+          // プロフィール取得に失敗した場合は何もしない（UIは空表示）
+        }
+      }
+    });
+  }
+
+  String _formatYmd(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y/$m/$d';
+  }
+
+  String _toUiGender(String apiGender) {
+    switch (apiGender) {
+      case 'male':
+        return '男性';
+      case 'female':
+        return '女性';
+      case 'other':
+        return 'その他';
+      default:
+        return 'その他';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final families = state.families;
     final canAddMore = families.length < 10;
@@ -100,8 +150,8 @@ class FamilyEditPage extends ConsumerWidget {
                       }
                     }).toList(),
                   );
-                  final repo = ref.read(profileRepositoryProvider);
-                  await repo.patchProfile(nextProfile);
+                  // Provider経由で保存し、状態更新を伝播
+                  await ref.read(profileProvider.notifier).save(nextProfile);
                   if (context.mounted) {
                     AppSnackBar.showSuccess(context, '保存しました');
                     Navigator.pop(context);

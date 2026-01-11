@@ -67,8 +67,8 @@ class EditingProfileNotifier extends Notifier<UserProfile?> {
 /// 実効プロフィール（API成功ならサーバ値、失敗・未取得時はオンボーディング値で合成）
 final effectiveProfileProvider = FutureProvider<UserProfile>((ref) async {
   try {
-    // 優先: サーバから取得
-    return await ref.read(profileProvider.future);
+    // 優先: サーバから取得（依存を監視して更新を伝播）
+    return await ref.watch(profileProvider.future);
   } catch (_) {
     // フォールバック: オンボーディングの入力値から合成
     final ob = ref.read(onboardingProvider);
